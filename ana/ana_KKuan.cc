@@ -915,7 +915,7 @@ int main(int argc, char **argv)
 
             if (constit_vec.Eta() == 0)
             {
-              //cout << "Timing_eta_0: " << abs(2.3 * TMath::Power(10, 9) / (SOL * TMath::Sin(constit_vec.Theta()))) << endl;
+              //cout << "Timing_eta_0: " << abs(2.3 * TMath./A  ::Power(10, 9) / (SOL * TMath::Sin(constit_vec.Theta()))) << endl;
             }
             Timing_Standard->Fill(abs(2.3 * TMath::Power(10, 9) / (SOL * TMath::Sin(constit_vec.Theta())))); //Suppose all of them are photons.
             PT_jet.push_back(constit[i].perp());
