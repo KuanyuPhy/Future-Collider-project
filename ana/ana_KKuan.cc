@@ -286,9 +286,11 @@ int main(int argc, char **argv)
   TH1F *Event_number_check_jet = new TH1F("Event_number_check_jet", "Event_number_check_jet", 12, 0, 12);
   TH1F *Eta_plot = new TH1F("Eta_plot", "Eta_plot", 200, -10, 10);
   TH1F *Eta_plot_after_cut = new TH1F("Eta_plot_after_cut", "Eta_plot_after_cut", 200, -10, 10);
+  TH1F *Eta_plot_check = new TH1F("Eta_plot_check", "Eta_plot_check", 200, -10, 10);
   TH1F *Timing_Standard = new TH1F("Timing_Standard", "Timing_Standard", 200, 0, 50);
   TFile *RootFile = new TFile(outputfile.c_str(), "UPDATE", "Histogram file");
   TH1D *h_debug = new TH1D("debug", "events", 10, 0, 10);
+  TH1D *h_e_jet = new TH1D("jet_energy", "energy jets", 1000, 0, 100);
 
   double TTxbins[] = {0.0, 0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1., 1.1, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0, 4.0, 6.0, 8.0, 10.0, 20.0, 30};
   const int TTBins = sizeof(TTxbins) / sizeof(double);
@@ -327,9 +329,9 @@ int main(int argc, char **argv)
   TH1F *Timing_detector_Trailing = new TH1F("Timing_detector_Trailing", "Timing_detector_Trailing", 200, 0, 50);
   TH1F *Timing_detector_Average = new TH1F("Timing_detector_Average", "Timing_detector_Average", 200, 0, 50);
   TH1F *Timing_detector_next_to_trailing = new TH1F("Timing_detector_next_to_trailing", "Timing_detector_next_to_trailing", 200, 0, 50);
-  TH1F *Timing_detector_Trailing_P = new TH1F("Timing_detector_Trailing_P", "Timing_detector_Trailing_P", 200, 0, 100);
-  TH1F *Timing_detector_next_to_trailing_P = new TH1F("Timing_detector_next_to_trailing_P", "Timing_detector_next_to_trailing_P", 200, 0, 100);
-  TH1F *Timing_detector_Trailing_V = new TH1F("Timing_detector_Trailing_V", "Timing_detector_Trailing_V", 10000, 8, 9);
+  TH1F *Timing_detector_Trailing_P = new TH1F("Timing_detector_Trailing_P", "Timing_detector_Trailing_P", 50, 0, 200);
+  TH1F *Timing_detector_next_to_trailing_P = new TH1F("Timing_detector_next_to_trailing_P", "Timing_detector_next_to_trailing_P", 50, 0, 100);
+  TH1F *Timing_detector_Trailing_V = new TH1F("Timing_detector_Trailing_V", "Timing_detector_Trailing_V", 1000, 8, 9);
   TH1F *Timing_detector_next_to_trailing_V = new TH1F("Timing_detector_next_to_trailing_V", "Timing_detector_next_to_trailing_V", 1000, 0.9, 1);
   TH1F *Timing_detector_dR_Leading_trailing_PT = new TH1F("Timing_detector_dR_Leading_trailing_PT", "Timing_detector_dR_Leading_trailing_PT", 50, 0, 1);
   TH1F *Timing_detector_dR_Leading_next_trailing_PT = new TH1F("Timing_detector_dR_Leading_next_trailing_PT", "Timing_detector_dR_Leading_next_trailing_PT", 50, 0, 1);
@@ -797,7 +799,7 @@ int main(int argc, char **argv)
           }
         }
         Eta_plot->Fill(p_using.Eta());
-        if (abs(p_using.Eta()) > 0.6)
+        if (abs(p_using.Eta()) > 1.7)
         {
           //cout << "Particles of jet outside Eta==1" << endl;
           continue;
@@ -819,11 +821,12 @@ int main(int argc, char **argv)
           fastjet::PseudoJet constituent(constit[i].px(), constit[i].py(), constit[i].pz(), constit[i].e());
           TLorentzVector constit_vec;
           constit_vec.SetPxPyPzE(constit[i].px(), constit[i].py(), constit[i].pz(), constit[i].e());
+          /*
           if (abs(constit_vec.Eta()) > 1)
           {
             Event_number_out_Eta2P1 = Event_number_out_Eta2P1 + 1;
             continue;
-          }
+          }*/
           int it;
           it = find(Total_particle_kind.begin(), Total_particle_kind.end(), abs(constit[i].user_index()))[0];
           if (it != abs(constit[i].user_index()))
@@ -848,11 +851,11 @@ int main(int argc, char **argv)
           {
             continue;
           }
-          if (abs(constit_vec.Eta()) > 1)
+          /*if (abs(constit_vec.Eta()) > 1)
           {
             Event_number_out_Eta2P1 = Event_number_out_Eta2P1 + 1;
             continue;
-          }
+          }*/
           int it;
           it = find(Total_particle_kind.begin(), Total_particle_kind.end(), abs(constit[i].user_index()))[0];
           if (it != abs(constit[i].user_index()))
@@ -865,16 +868,21 @@ int main(int argc, char **argv)
               Total_particle_ID_eta_PT_cut->Fill(m);
           }
           mass_average = mass_average + constit_vec.M();
-          /*
-           int ID1 = 0;
-           ID1 = find(PDG_with_no_charge.begin(), PDG_with_no_charge.end(), abs(constit[i].user_index()))[0];
-           if (constit[i].perp() < 1.5 and ID != abs(constit[i].user_index()))
-           {
-          
-             continue;
-           }*/
+
+          int ID1 = 0;
+          ID1 = find(PDG_with_no_charge.begin(), PDG_with_no_charge.end(), abs(constit[i].user_index()))[0];
+          if (constit[i].perp() < 1.5 and ID != abs(constit[i].user_index()))
+          {
+
+            continue;
+          }
+          //cut off pt < 1.5 GeV
+          if (constit[i].perp() < 1.5)
+          {
+            continue;
+          }
           float constit_velocity = TMath::Power((TMath::Power(constit[i].px(), 2) + TMath::Power(constit[i].py(), 2) + TMath::Power(constit[i].pz(), 2)), 0.5) / constit[i].e(); //Beta
-          float constit_velocity_vt = TMath::Power((TMath::Power(constit[i].px(), 2) + TMath::Power(constit[i].py(), 2)), 0.5) / constit[i].e();
+          float constit_velocity_vt = TMath::Power((TMath::Power(constit[i].px(), 2) + TMath::Power(constit[i].py(), 2) + TMath::Power(constit[i].pz(), 2)), 0.5) / constit[i].e();
           float constit_velocity_z = (constit[i].pz() / constit[i].e()); // Magnetic_consideration
           if (abs(sjets_truth[k].constituents()[i].user_index()) == 211)
           {
@@ -912,11 +920,11 @@ int main(int argc, char **argv)
             velocity_jet.push_back(constit_velocity_vt);
             velocity_jet_Z.push_back(constit[i].pz() / constit[i].e());
             velocity_jet_Theta.push_back(constit_vec.Theta());
-
+            /*
             if (constit_vec.Eta() == 0)
             {
               //cout << "Timing_eta_0: " << abs(2.3 * TMath./A  ::Power(10, 9) / (SOL * TMath::Sin(constit_vec.Theta()))) << endl;
-            }
+            }*/
             Timing_Standard->Fill(abs(2.3 * TMath::Power(10, 9) / (SOL * TMath::Sin(constit_vec.Theta())))); //Suppose all of them are photons.
             PT_jet.push_back(constit[i].perp());
             PT_jet_sort.push_back(constit[i].perp());
@@ -926,6 +934,8 @@ int main(int argc, char **argv)
             FourP.push_back(constit_vec);
             FourP_1.push_back(constituent);
             event_number = event_number + 1;
+            Eta_plot_check->Fill(constit_vec.Eta());
+            h_e_jet->Fill(constit[i].perp());
           }
         }
         //cout << "Jet_each_event: " << Jet_each_event << endl;
@@ -1394,6 +1404,7 @@ int main(int argc, char **argv)
         Timing_detector_Leading->Fill(abs(2.3 * TMath::Power(10, 9) / (Vz_Leading * SOL * TMath::Tan(Theta_Leading))));
         Timing_detector_Trailing->Fill(abs(2.3 * TMath::Power(10, 9) / (Vz_Trailing * SOL * TMath::Tan(Theta_Trailing))));
         Timing_detector_next_to_trailing->Fill(abs(2.3 * TMath::Power(10, 9) / (Vz_Next_to_Trailing * SOL * TMath::Tan(Theta_Next_to_Trailing))));
+        //cout << "P = " << abs(Momentum_Trailing) << endl;
         Timing_detector_Trailing_P->Fill(abs(Momentum_Trailing));
         Timing_detector_next_to_trailing_P->Fill(abs(Momentum_Next_to_Trailing));
         //cout << "logV =" << 3 * TMath::Power(10, 8) * abs(velocity_jet_sort[0]) << endl;
@@ -1429,6 +1440,7 @@ int main(int argc, char **argv)
   mytree->Write();
   Event_number_check->Write();
   Eta_plot_after_cut->Write();
+  Eta_plot_check->Write();
   Eta_plot->Write();
   check_Pion_DZ->Write();
   check_Pion_VZ->Write();

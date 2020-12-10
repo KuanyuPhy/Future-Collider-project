@@ -3,7 +3,6 @@ inline void SetRootStyle()
     //  For the gstyle statistics:
     //gStyle->SetOptStat(0);
     gStyle->SetOptFit(111111);
-
 }
 
 template <typename T>
@@ -31,5 +30,5 @@ void SetDrawNcuOpt(T &h, Color_t Color, string title, string xTitle, string yTit
     h->SetLineWidth(2);
 
     // For the statistics box:
-    h->SetStats(1);
+    h->SetStats(0);
 }

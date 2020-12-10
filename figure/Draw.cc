@@ -9,12 +9,14 @@
 #include "THStack.h"
 
 void Time();
+void Momentum();
+void Velocity();
 
 void Draw()
 {
     //Time();
-    //Velocity();
-    Momentum();
+    Velocity();
+    //Momentum();
 }
 
 void Time()
@@ -89,17 +91,20 @@ void Velocity()
     mean2 = bkg->GetMean();
     rms2 = bkg->GetRMS();
 
-    SetDrawNcuOpt(sig, kRed, "Trailing Velocity  - collision point to HCAL(Trailing)", "T [ns]", "Arbitrary number");
-    SetDrawNcuOpt(bkg, kBlue, "Trailing Velocity - collision point to HCAL(Trailing)", "T [ns]", "Arbitrary number");
+    SetDrawNcuOpt(sig, kRed, "Trailing Velocity  - collision point to HCAL(Trailing)", "V (log)", "Arbitrary number");
+    SetDrawNcuOpt(bkg, kBlue, "Trailing Velocity - collision point to HCAL(Trailing)", "V (log)", "Arbitrary number");
     SetRootStyle();
 
     sig->Scale(1.0 / sig->Integral());
     bkg->Scale(1.0 / bkg->Integral());
 
-    sig->GetXaxis()->SetRangeUser(6.5, 24.5);
-    sig->GetYaxis()->SetRangeUser(0, 0.3);
-    bkg->GetXaxis()->SetRangeUser(6.5, 24.5);
-    bkg->GetYaxis()->SetRangeUser(0, 0.3);
+    sig->GetXaxis()->SetRangeUser(8.4, 8.5);
+    sig->GetYaxis()->SetRangeUser(0, 0.8);
+    bkg->GetXaxis()->SetRangeUser(8.4, 8.5);
+    bkg->GetYaxis()->SetRangeUser(0, 0.8);
+
+    //gPad->SetLogy();
+    //gPad->SetLogx();
 
     bkg->DrawNormalized("hist");
     sig->DrawNormalized("same&&hist");
@@ -144,17 +149,17 @@ void Momentum()
     mean2 = bkg->GetMean();
     rms2 = bkg->GetRMS();
 
-    SetDrawNcuOpt(sig, kRed, "Momentum  - collision point to HCAL(Trailing)", "T [ns]", "Arbitrary number");
-    SetDrawNcuOpt(bkg, kBlue, "Momentum - collision point to HCAL(Trailing)", "T [ns]", "Arbitrary number");
+    SetDrawNcuOpt(sig, kRed, "Momentum  - collision point to HCAL(Trailing)", "P [GeV]", "Arbitrary number");
+    SetDrawNcuOpt(bkg, kBlue, "Momentum - collision point to HCAL(Trailing)", "P [GeV]", "Arbitrary number");
     SetRootStyle();
 
     sig->Scale(1.0 / sig->Integral());
     bkg->Scale(1.0 / bkg->Integral());
 
-    sig->GetXaxis()->SetRangeUser(6.5, 24.5);
-    sig->GetYaxis()->SetRangeUser(0, 0.3);
-    bkg->GetXaxis()->SetRangeUser(6.5, 24.5);
-    bkg->GetYaxis()->SetRangeUser(0, 0.3);
+    //sig->GetXaxis()->SetRangeUser(6.5, 24.5);
+    //sig->GetYaxis()->SetRangeUser(0, 0.3);
+    //bkg->GetXaxis()->SetRangeUser(6.5, 24.5);
+    //bkg->GetYaxis()->SetRangeUser(0, 0.3);
 
     bkg->DrawNormalized("hist");
     sig->DrawNormalized("same&&hist");
