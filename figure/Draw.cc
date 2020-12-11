@@ -15,8 +15,8 @@ void Velocity();
 void Draw()
 {
     //Time();
-    Velocity();
-    //Momentum();
+    //Velocity();
+    Momentum();
 }
 
 void Time()
@@ -77,8 +77,11 @@ void Velocity()
 {
     auto c1 = new TCanvas("c", "BPRE", 10, 10, 800, 600);
     double mean1, rms1, mean2, rms2;
-    TFile *file1 = new TFile("../output/tev5mm_pythia6_zprime5tev_ww_0199_hepsim.slcio.root");
-    TFile *file2 = new TFile("../output/tev5mm_pythia6_zprime5tev_qq_0199_hepsim.slcio.root");
+    //TFile *file1 = new TFile("../output/tev5mm_pythia6_zprime5tev_ww_0199_hepsim.slcio.root");
+    //TFile *file2 = new TFile("../output/tev5mm_pythia6_zprime5tev_qq_0199_hepsim.slcio.root");
+
+    TFile *file1 = new TFile("../output/testsig.root");
+    TFile *file2 = new TFile("../output/testbkg.root");
 
     //TH1F *sig = ((TH1F *)file1->Get("Timing_detector_Leading"));
     //TH1F *bkg = ((TH1F *)file2->Get("Timing_detector_Leading"));
@@ -135,8 +138,11 @@ void Momentum()
 {
     auto c1 = new TCanvas("c", "BPRE", 10, 10, 800, 600);
     double mean1, rms1, mean2, rms2;
-    TFile *file1 = new TFile("../output/tev5mm_pythia6_zprime5tev_ww_0199_hepsim.slcio.root");
-    TFile *file2 = new TFile("../output/tev5mm_pythia6_zprime5tev_qq_0199_hepsim.slcio.root");
+    //TFile *file1 = new TFile("../output/tev5mm_pythia6_zprime5tev_ww_0199_hepsim.slcio.root");
+    //TFile *file2 = new TFile("../output/tev5mm_pythia6_zprime5tev_qq_0199_hepsim.slcio.root");
+
+    TFile *file1 = new TFile("../output/testsig.root");
+    TFile *file2 = new TFile("../output/testbkg.root");
 
     //TH1F *sig = ((TH1F *)file1->Get("Timing_detector_Leading"));
     //TH1F *bkg = ((TH1F *)file2->Get("Timing_detector_Leading"));
@@ -156,9 +162,9 @@ void Momentum()
     sig->Scale(1.0 / sig->Integral());
     bkg->Scale(1.0 / bkg->Integral());
 
-    //sig->GetXaxis()->SetRangeUser(6.5, 24.5);
+    sig->GetXaxis()->SetRangeUser(0, 20);
     //sig->GetYaxis()->SetRangeUser(0, 0.3);
-    //bkg->GetXaxis()->SetRangeUser(6.5, 24.5);
+    bkg->GetXaxis()->SetRangeUser(0, 20);
     //bkg->GetYaxis()->SetRangeUser(0, 0.3);
 
     bkg->DrawNormalized("hist");

@@ -329,7 +329,8 @@ int main(int argc, char **argv)
   TH1F *Timing_detector_Trailing = new TH1F("Timing_detector_Trailing", "Timing_detector_Trailing", 200, 0, 50);
   TH1F *Timing_detector_Average = new TH1F("Timing_detector_Average", "Timing_detector_Average", 200, 0, 50);
   TH1F *Timing_detector_next_to_trailing = new TH1F("Timing_detector_next_to_trailing", "Timing_detector_next_to_trailing", 200, 0, 50);
-  TH1F *Timing_detector_Trailing_P = new TH1F("Timing_detector_Trailing_P", "Timing_detector_Trailing_P", 50, 0, 200);
+  //TH1F *Timing_detector_Trailing_P = new TH1F("Timing_detector_Trailing_P", "Timing_detector_Trailing_P", 50, 0, 200);
+  TH1F *Timing_detector_Trailing_P = new TH1F("Timing_detector_Trailing_P", "Timing_detector_Trailing_P", 200, 0, 100);
   TH1F *Timing_detector_next_to_trailing_P = new TH1F("Timing_detector_next_to_trailing_P", "Timing_detector_next_to_trailing_P", 50, 0, 100);
   TH1F *Timing_detector_Trailing_V = new TH1F("Timing_detector_Trailing_V", "Timing_detector_Trailing_V", 1000, 8, 9);
   TH1F *Timing_detector_next_to_trailing_V = new TH1F("Timing_detector_next_to_trailing_V", "Timing_detector_next_to_trailing_V", 1000, 0.9, 1);
