@@ -14,6 +14,7 @@ void Velocity();
 
 void Draw()
 {
+    //Choose Which function you want to run
     //Time();
     //Velocity();
     Momentum();
@@ -21,8 +22,11 @@ void Draw()
 
 void Time()
 {
+    //Create the TCanvas first
     auto c1 = new TCanvas("c", "BPRE", 10, 10, 800, 600);
     double mean1, rms1, mean2, rms2;
+
+    //Input the root file
     TFile *file1 = new TFile("../output/tev5mm_pythia6_zprime5tev_ww_0199_hepsim.slcio.root");
     TFile *file2 = new TFile("../output/tev5mm_pythia6_zprime5tev_qq_0199_hepsim.slcio.root");
 
@@ -41,17 +45,20 @@ void Time()
     SetDrawNcuOpt(bkg, kBlue, "Time of flight - collision point to HCAL(Trailing)", "T [ns]", "Arbitrary number");
     SetRootStyle();
 
+    //Normalize signal and background
     sig->Scale(1.0 / sig->Integral());
     bkg->Scale(1.0 / bkg->Integral());
 
+    //customized your signal and background range
     sig->GetXaxis()->SetRangeUser(6.5, 24.5);
     sig->GetYaxis()->SetRangeUser(0, 0.3);
     bkg->GetXaxis()->SetRangeUser(6.5, 24.5);
     bkg->GetYaxis()->SetRangeUser(0, 0.3);
 
-    bkg->DrawNormalized("hist");
-    sig->DrawNormalized("same&&hist");
+    bkg->Draw("hist");
+    sig->Draw("same&&hist");
 
+    //customized your TLegend
     TLegend *leg2 = new TLegend(0.5, 0.45, 0.89, 0.85);
 
     char *mean = Form("Sig mean = %.2f ", mean1);
@@ -60,6 +67,7 @@ void Time()
     char *bmean = Form("Bkg mean = %.2f ", mean2);
     char *brms = Form("Bkg rms = %.2f ", rms2);
 
+    //Create the TLegend
     leg2->SetBorderSize(0);
     leg2->SetHeader("FD group -SiFCC");
     leg2->AddEntry(sig, "Z'(5TeV)#rightarrowW^{+}W^{-} #rightarrow 2 subjet", "l");
@@ -133,7 +141,6 @@ void Velocity()
     leg2->Draw("same");
     c1->Print("TrailingV.png");
 }
-
 void Momentum()
 {
     auto c1 = new TCanvas("c", "BPRE", 10, 10, 800, 600);
