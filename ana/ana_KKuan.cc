@@ -331,7 +331,7 @@ int main(int argc, char **argv)
   TH1F *Timing_detector_next_to_trailing = new TH1F("Timing_detector_next_to_trailing", "Timing_detector_next_to_trailing", 200, 0, 50);
   //TH1F *Timing_detector_Trailing_P = new TH1F("Timing_detector_Trailing_P", "Timing_detector_Trailing_P", 50, 0, 200);
   TH1F *Timing_detector_Trailing_P = new TH1F("Timing_detector_Trailing_P", "Timing_detector_Trailing_P", 200, 0, 100);
-  TH1F *Timing_detector_next_to_trailing_P = new TH1F("Timing_detector_next_to_trailing_P", "Timing_detector_next_to_trailing_P", 50, 0, 100);
+  TH1F *Timing_detector_next_to_trailing_P = new TH1F("Timing_detector_next_to_trailing_P", "Timing_detector_next_to_trailing_P", 200, 0, 100);
   TH1F *Timing_detector_Trailing_V = new TH1F("Timing_detector_Trailing_V", "Timing_detector_Trailing_V", 1000, 8, 9);
   TH1F *Timing_detector_next_to_trailing_V = new TH1F("Timing_detector_next_to_trailing_V", "Timing_detector_next_to_trailing_V", 1000, 0.9, 1);
   TH1F *Timing_detector_dR_Leading_trailing_PT = new TH1F("Timing_detector_dR_Leading_trailing_PT", "Timing_detector_dR_Leading_trailing_PT", 50, 0, 1);
@@ -870,7 +870,7 @@ int main(int argc, char **argv)
           }
           mass_average = mass_average + constit_vec.M();
 
-          int ID1 = 0;
+          int ID1;
           ID1 = find(PDG_with_no_charge.begin(), PDG_with_no_charge.end(), abs(constit[i].user_index()))[0];
           if (constit[i].perp() < 1.5 and ID != abs(constit[i].user_index()))
           {
@@ -929,7 +929,9 @@ int main(int argc, char **argv)
             Timing_Standard->Fill(abs(2.3 * TMath::Power(10, 9) / (SOL * TMath::Sin(constit_vec.Theta())))); //Suppose all of them are photons.
             PT_jet.push_back(constit[i].perp());
             PT_jet_sort.push_back(constit[i].perp());
+
             momentum_jet.push_back(constit_vec.P());
+
             P_jet_sort.push_back(constit_vec.P());
             constit_PDG.push_back(abs(sjets_truth[k].constituents()[i].user_index()));
             FourP.push_back(constit_vec);
@@ -1044,6 +1046,7 @@ int main(int argc, char **argv)
               Particle_ID_T_PT.push_back(PT_jet[i]);
               Particle_ID_T_T.push_back(jet_time[i]);
               Particle_ID_T.push_back(constit_PDG[i]);
+              //cout << "1 =" << HighestPT_Trailing_and_next_trailing[0].DeltaR(FourP[i]);
               dR_Highest_PT_T.push_back(HighestPT_Trailing_and_next_trailing[0].DeltaR(FourP[i]));
 
               if (j < 5)
@@ -1245,12 +1248,20 @@ int main(int argc, char **argv)
         }
         for (unsigned int i = 0; i < jet_time.size(); i++)
         {
+          //int debug = jet_time.size() - 1;
+          //cout << "i =" << i << endl;
+          //cout << "jet_time.size() =" << jet_time.size() << endl;
+          //cout << "jet_time.size() - 1 =" << debug << endl;
+          //cout << "jet_time_sort[jet_time.size() - 1] =" << jet_time_sort[jet_time.size() - 1] << endl;
+          //cout << "jet_time[i] =" << jet_time[i] << endl;
           if (jet_time_sort[jet_time.size() - 1] == jet_time[i])
           {
+            //cout << "debug1" << endl;
             Trailing_ID_T = constit_PDG[i];
           }
           if (jet_time_sort[jet_time.size() - 2] == jet_time[i])
           {
+            //cout << "debug2" << endl;
             Next_to_trailing_ID_T = constit_PDG[i];
           }
           if (PT_jet_sort[0] == PT_jet[i])
@@ -1264,6 +1275,8 @@ int main(int argc, char **argv)
         }
         int it;
         it = find(Trailing_particle_kind.begin(), Trailing_particle_kind.end(), abs(Trailing_ID_T))[0];
+        //cout << "it = " << it << endl;
+        //cout << "abs(Trailing_ID_T) = " << abs(Trailing_ID_T) << endl;
         if (it != abs(Trailing_ID_T))
         {
           Trailing_particle_kind.push_back(abs(Trailing_ID_T));
@@ -1279,6 +1292,8 @@ int main(int argc, char **argv)
         }
         int it2;
         it2 = find(Trailing_particle_kind.begin(), Trailing_particle_kind.end(), abs(Trailing_ID_PT))[0];
+        //cout << "it2 = " << it2 << endl;
+        //cout << " abs(Trailing_ID_PT) = " << abs(Trailing_ID_PT) << endl;
         if (it2 != abs(Trailing_ID_PT))
         {
           Trailing_particle_kind.push_back(abs(Trailing_ID_PT));
@@ -1294,6 +1309,8 @@ int main(int argc, char **argv)
         }
         int it4;
         it4 = find(Trailing_particle_kind.begin(), Trailing_particle_kind.end(), abs(Next_to_trailing_ID_T))[0];
+        //cout << "it4 = " << it4 << endl;
+        //cout << " abs(Next_to_trailing_ID_T) = " << abs(Next_to_trailing_ID_T) << endl;
         if (it4 != abs(Next_to_trailing_ID_T))
         {
           Trailing_particle_kind.push_back(abs(Next_to_trailing_ID_T));
@@ -1309,6 +1326,8 @@ int main(int argc, char **argv)
         }
         int it3;
         it3 = find(Trailing_particle_kind.begin(), Trailing_particle_kind.end(), abs(Next_to_trailing_ID_PT))[0];
+        //cout << "it3 = " << it3 << endl;
+        //cout << " abs(Next_to_trailing_ID_PT) = " << abs(Next_to_trailing_ID_PT) << endl;
         if (it3 != abs(Next_to_trailing_ID_PT))
         {
           Trailing_particle_kind.push_back(abs(Next_to_trailing_ID_PT));
@@ -1413,6 +1432,7 @@ int main(int argc, char **argv)
         Timing_detector_Trailing_V->Fill(TMath::Log10(3 * TMath::Power(10, 8) * abs(velocity_jet_sort[0])));
         //cout << "Trailing-V: " << TMath::Log10(3 * TMath::Power(10, 8) * abs(velocity_jet_sort[0])) << endl;
         Timing_detector_next_to_trailing_V->Fill(abs(velocity_jet_sort[1]));
+
         Timing_detector_dR_Leading_trailing_T->Fill(HighestPT_Trailing_and_next_trailing[0].DeltaR(HighestPT_Trailing_and_next_trailing[1]));
         Timing_detector_dR_Leading_next_trailing_T->Fill(HighestPT_Trailing_and_next_trailing[0].DeltaR(HighestPT_Trailing_and_next_trailing[2]));
         Timing_detector_dR_Leading_trailing_PT->Fill(HighestPT_Trailing_and_next_trailing[0].DeltaR(HighestPT_Trailing_and_next_trailing[3]));
