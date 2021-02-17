@@ -595,8 +595,8 @@ int main(int argc, char **argv)
                 // 1st layer on middle
                 double layer_pos_cm = 0.1 * (layer_size_ecal_mm * 0.5 + (layer * layer_size_ecal_mm));
                 double Thit = mcp->getTime();
-                cout << "CalorimeterHit Thit =" << Thit << endl;
-                cout << "CalorimeterHit layer =" << layer << endl;
+                //cout << "CalorimeterHit Thit =" << Thit << endl;
+                //cout << "CalorimeterHit layer =" << layer << endl;
                 ecalsum = ecalsum + e;
                 PseudoJet pj(px, py, pz, e);
                 double eta_r = pj.pseudorapidity();
@@ -676,7 +676,7 @@ int main(int argc, char **argv)
                 }
                 h_jet_nn_reco->Fill(Recojets_axis_index.size());
 
-            } //end of Recojets loop
+            } //end of save Recojets loop
             vector<vector<TLorentzVector>> FourP_dR_Reco(Recojets.size(), vector<TLorentzVector>());
             vector<vector<int>> PDG_Reco(Recojets.size(), vector<int>());
             vector<vector<double>> PT_Reco_sort(Recojets.size(), vector<double>());
@@ -748,30 +748,96 @@ int main(int argc, char **argv)
                         }
                     }
                 }
-            }
+                //================================================================
+                //  Save the Time_Difference to TH1D
+                //================================================================
+                double T_first = 0;
+                double T_last = 0;
+                if (ECALhits31.size() > 0 && ECALhits0.size() > 0)
+                {
+                    float Time_Difference = 0;
+                    for (unsigned int G = 0; G < ECALhits0.size(); G++)
+                    {
+                        T_first = T_first + ECALhits0[G];
+                    }
+                    for (unsigned int H = 0; H < ECALhits31.size(); H++)
+                    {
+                        T_last = T_last + ECALhits31[H];
+                    }
+                    Time_Difference = (T_last / ECALhits31.size()) - (T_first / ECALhits0.size());
+                    if (Time_Difference > 0)
+                    {
+                        Timing_detecto_ECAL_TDif->Fill(Time_Difference);
+                    }
+                }
+            } //end of loop all Recojets
+
             //================================================================
-            //  Save the Time_Difference to TH1D
+            //       Sort from small to big (T_Reco_sort and PT_Reco_sort)
             //================================================================
-            double T_first = 0;
-            double T_last = 0;
-            if (ECALhits31.size() > 0 && ECALhits0.size() > 0)
+            for (unsigned int i = 0; i < Recojets.size(); i++)
             {
-                float Time_Difference = 0;
-                for (unsigned int G = 0; G < ECALhits0.size(); G++)
+                sort(T_Reco_sort[i].begin(), T_Reco_sort[i].end());
+                sort(PT_Reco_sort[i].begin(), PT_Reco_sort[i].end());
+            }
+            //================================================================
+            // Finally output PT_sort_number_only == PT_Reco_sort size
+            //================================================================
+            vector<vector<TLorentzVector>> Highest_PT_FourP(Recojets.size(), vector<TLorentzVector>());
+            for (unsigned int i = 0; i < Recojets.size(); i++)
+            {
+                //cout << "Back_forth =" << Back_forth << endl;
+                if (T_Reco_sort[i].size() == 0)
+                    continue;
+                PT_sort_number_only[i].push_back(PT_Reco_sort[i][0]);
+                T_sort_number_only[i].push_back(T_Reco_sort[i][0]);
+                //cout << "PT_sort_number_only size = " << PT_sort_number_only[Back_forth].size() << endl;
+                for (unsigned int uuu = 0; uuu < T_Reco_sort[i].size(); uuu++)
                 {
-                    T_first = T_first + ECALhits0[G];
-                }
-                for (unsigned int H = 0; H < ECALhits31.size(); H++)
-                {
-                    T_last = T_last + ECALhits31[H];
-                }
-                Time_Difference = T_last - T_first;
-                if (Time_Difference > 0)
-                {
-                    Timing_detecto_ECAL_TDif->Fill(Time_Difference);
-                    cout << "Time_Difference: " << Time_Difference << endl;
+                    // << "uuu =" << uuu << endl;
+                    if (PT_Reco_sort[i][uuu] != PT_sort_number_only[i].back())
+                    {
+                        //cout << "test = " << PT_Reco_sort[Back_forth][uuu] << endl;
+                        PT_sort_number_only[i].push_back(PT_Reco_sort[i][uuu]); //只存不同的pt
+                    }
+                    if (T_Reco_sort[i][uuu] != T_sort_number_only[i].back())
+                    {
+                        T_sort_number_only[i].push_back(T_Reco_sort[i][uuu]);
+                    }
                 }
             }
+            vector<int> Full_contain;
+            unsigned int check_point_eta = 0;
+            //=================================
+            // make sure that 90% eta are small than 1
+            //=================================
+            for (unsigned int i = 0; i < Recojets.size(); i++)
+            {
+                if (event_number_Reco[i] > 0)
+                {
+                    if ((Eta_smaller_than_1_event[i] / event_number_Reco[i]) > 0.9) //???
+                    {
+                        Full_contain.push_back(1);
+                    }
+                    else
+                    {
+                        Full_contain.push_back(0);
+                        check_point_eta = check_point_eta + 1;
+                    }
+                }
+                else
+                {
+                    Full_contain.push_back(0);
+                    check_point_eta = check_point_eta + 1;
+                }
+            }
+            if (check_point_eta == Recojets.size())
+            {
+                continue;
+            }
+            vector<float> dR_Highest_PT_T_Reco;
+            vector<float> dR_Highest_PT_PT_Reco;
+
             /*
             if (T_first_last_average[0].size() != 0 and T_first_last_average[1].size() != 0)
             {
