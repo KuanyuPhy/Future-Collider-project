@@ -615,7 +615,7 @@ int main(int argc, char **argv)
         {
           simhits.push_back(p);
         }
-      }
+      } //end of EcalBarrelHits loop
       // ECAL hits after created by slicPandora
       double ecalsum = 0;
       vector<PseudoJet> avec_hits;
@@ -653,7 +653,7 @@ int main(int argc, char **argv)
         {
           avec_hits.push_back(pj);
         }
-      }
+      } //end of EM_BARREL loop
       //================================================================
       //  Check Hit time
       //================================================================
@@ -682,8 +682,8 @@ int main(int argc, char **argv)
             Timediff31tree = Timediff31;
             //cout << "Timediff =" << Timediff << endl;
           }
-        }
-      }
+        } //end of Calhits loop
+      }   //end of simhits loop
       tGEN->Fill();
     }
     lcReader->close();
