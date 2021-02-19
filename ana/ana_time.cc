@@ -676,7 +676,7 @@ int main(int argc, char **argv)
             Timediff1tree = Timediff1;
             //cout << "Timediff =" << Timediff << endl;
           }
-          if (Simlayer == 1 && Callayer == 1)
+          if (Simlayer == 31 && Callayer == 31)
           {
             double Timediff31 = SimThit - CalThit;
             Timediff31tree = Timediff31;
