@@ -294,7 +294,10 @@ int main(int argc, char **argv)
   TH1D *h_jet_nn_truth = new TH1D("h_jet_nn_truth", "Nr of truth jets", 10, 0, 10);    //after match
   TH1D *h_jet_m_truth = new TH1D("jet_m_truth", "Mass [GeV]", 100, 0, 100);
   TH1D *Timing_detecto_ECAL_1 = new TH1D("Timing_detecto_ECAL_1", "Timing_detecto_ECAL_TDif", 200, 0, 50);
-  TH1D *Timing_detecto_ECAL_31 = new TH1D("Timing_detecto_ECAL_31", "Timing_detecto_ECAL_TDif", 200, 0, 50);
+  TH1D *Timing_detecto_ECAL_10 = new TH1D("Timing_detecto_ECAL_10", "Timing_detecto_ECAL_TDif", 200, 0, 50);
+
+  TH1D *Timing_detecto_ECAL31_1 = new TH1D("Timing_detecto_ECAL31_1", "Timing_detecto_ECAL_TDif", 200, 0, 50);
+  TH1D *Timing_detecto_ECAL31_10 = new TH1D("Timing_detecto_ECAL31_10", "Timing_detecto_ECAL_TDif", 200, 0, 50);
 
   // read detector geometry for this configuration
   string detector = "./data/rfull012_sifcch10/sifcch10/sifcch10.pandora";
@@ -661,7 +664,7 @@ int main(int argc, char **argv)
       //================================================================
       vector<float> SimECALhits0, SimECALhits31;
       vector<float> CalECALhits0, CalECALhits31;
-      vector<float> difftime1, difftime31;
+      vector<float> difftime1, difftime31, difftime131, difftime;
       for (unsigned i = 0; i < simhits.size(); i++)
       {
         LParticle hit = (LParticle)simhits.at(i);
@@ -695,9 +698,32 @@ int main(int argc, char **argv)
           }
         } //end of Calhits loop
       }   //end of simhits loop
+      //================================================================
+      //                Sort in increasing order
+      //================================================================
+      sort(SimECALhits0.begin(), SimECALhits0.end(), less<float>());
+      sort(CalECALhits0.begin(), CalECALhits0.end(), less<float>());
+      sort(SimECALhits31.begin(), SimECALhits31.end(), less<float>());
+      sort(CalECALhits31.begin(), CalECALhits31.end(), less<float>());
       double T_first = 0;
       double T_last = 0;
-      if (difftime1.size() > 0 && difftime31.size() > 0)
+      //double TTest = 0;
+      if (SimECALhits0.size() > 0 && CalECALhits0.size() > 0)
+      {
+        float dtime = SimECALhits0[0] - CalECALhits0[0];
+        float dtime10 = SimECALhits0[10] - CalECALhits0[10];
+        Timing_detecto_ECAL_1->Fill(dtime);
+        Timing_detecto_ECAL_10->Fill(dtime10);
+      }
+      if (SimECALhits31.size() > 0 && CalECALhits31.size() > 0)
+      {
+        float dtime = SimECALhits31[0] - CalECALhits31[0];
+        float dtime10 = SimECALhits31[10] - CalECALhits31[10];
+        Timing_detecto_ECAL31_1->Fill(dtime);
+        Timing_detecto_ECAL31_10->Fill(dtime10);
+      }
+      /*
+      if (SimECALhits0.size() > 0 && CalECALhits0.size() > 0)
       {
         float Time_1 = 0;
         float Time_31 = 0;
@@ -714,6 +740,7 @@ int main(int argc, char **argv)
         Time_31 = (T_last / difftime31.size());
         Timing_detecto_ECAL_31->Fill(Time_31);
       }
+      */
       tGEN->Fill();
     }
     lcReader->close();
@@ -723,7 +750,9 @@ int main(int argc, char **argv)
   //m_ntuple->Fill();
   RootFile->Write();
   Timing_detecto_ECAL_1->Write();
-  Timing_detecto_ECAL_31->Write();
+  Timing_detecto_ECAL_10->Write();
+  Timing_detecto_ECAL31_1->Write();
+  Timing_detecto_ECAL31_10->Write();
   h_jet_pt_truth_check->Write();
   h_jet_eta_truth_check->Write();
   h_jet_n_truth->Write();
