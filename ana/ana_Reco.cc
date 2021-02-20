@@ -272,16 +272,16 @@ int main(int argc, char **argv)
     TFile *RootFile = new TFile(outputfile.c_str(), "RECREATE", "Histogram file");
     TH1D *h_debug = new TH1D("debug", "events", 10, 0, 10);
 
-    TH1D *h_jet_pt_truth_check = new TH1D("h_jet_pt_truth_check", "pT [GeV] ", 270, 0, 2700); // plus Geant4
+    TH1D *h_jet_pt_truth_check = new TH1D("h_jet_pt_truth_check", "pT [GeV] ", 100, 0, 2700); // plus Geant4
     h_jet_pt_truth_check->GetXaxis()->SetTitle("P_{T}^{true,jet}");
     //h_jet_pt_truth_check->GetYaxis()->SetTitle("Entries");
     TH1D *h_jet_eta_truth_check = new TH1D("h_jet_eta_truth_check", "#eta", 100, -5, 5); //before eta cut
-    TH1D *h_jet_n_truth = new TH1D("jet_n_truth", "Nr of truth jets", 10, 0, 10);        //before match
+    TH1D *h_jet_n_truth = new TH1D("h_jet_n_truth", "Nr of truth jets", 10, 0, 10);      //before match
     TH1D *h_jet_nn_truth = new TH1D("h_jet_nn_truth", "Nr of truth jets", 10, 0, 10);    //after match
     TH1D *h_jet_m_truth = new TH1D("jet_m_truth", "Mass [GeV]", 100, 0, 100);
 
-    TH1D *h_jet_pt_reco_check = new TH1D("h_jet_pt_reco_check", "pT [GeV] ", 270, 0, 2700); // plus Geant4
-    h_jet_pt_reco_check->GetXaxis()->SetTitle("P_{T}^{true,jet}");
+    TH1D *h_jet_pt_reco_check = new TH1D("h_jet_pt_reco_check", "pT [GeV] ", 100, 0, 2700); // plus Geant4
+    h_jet_pt_reco_check->GetXaxis()->SetTitle("P_{T}^{Reco,jet}");
     //h_jet_pt_truth_check->GetYaxis()->SetTitle("Entries");
     TH1D *h_jet_eta_reco_check = new TH1D("h_jet_eta_reco_check", "#eta", 100, -5, 5); //before eta cut
     TH1D *h_jet_n_reco = new TH1D("h_jet_n_reco", "Nr of truth jets", 10, 0, 10);      //before match
@@ -289,7 +289,12 @@ int main(int argc, char **argv)
     TH1D *h_jet_m_reco = new TH1D("h_jet_m_reco", "Mass [GeV]", 100, 0, 100);
 
     TH1D *h_pt_ecal = new TH1D("ecal_pt", "pt ecal", 270, 0, 2700);
-    TH1F *Timing_detecto_ECAL_TDif = new TH1F("Timing_detecto_ECAL_TDif", "Timing_detecto_ECAL_TDif", 200, 0, 50);
+    TH1D *Timing_detecto_ECAL_TDif = new TH1D("Timing_detecto_ECAL_TDif", "Timing_detecto_ECAL_TDif", 200, 0, 50);
+    Timing_detecto_ECAL_TDif->GetXaxis()->SetTitle("T[ns]");
+
+    TH1D *h_effR_j1 = new TH1D("h_effR_j1", "not match true jet", 100, 0., 10.0);
+    TH1D *h_effR_j2 = new TH1D("h_effR_j1", "one match true jet", 100, 0., 10.0);
+    TH1D *h_effR_j3 = new TH1D("h_effR_j1", "two match true jet", 100, 0., 10.0);
 
     Int_t Event_reco;
     Float_t dR_Tr0T_HPt_Reco;
@@ -315,6 +320,12 @@ int main(int argc, char **argv)
     T_Reco_T->Branch("dR_Tr2PT_HPt_Reco", &dR_Tr2PT_HPt_Reco, "dR_Tr2PT_HPt_Reco/F");
     T_Reco_T->Branch("dR_Tr3PT_HPt_Reco", &dR_Tr3PT_HPt_Reco, "dR_Tr3PT_HPt_Reco/F");
     T_Reco_T->Branch("dR_Tr4PT_HPt_Reco", &dR_Tr4PT_HPt_Reco, "dR_Tr4PT_HPt_Reco/F");
+
+    Float_t dr0;
+    Float_t dr1;
+    TTree *tGEN = new TTree("tGEN", "Tree with vectors");
+    tGEN->Branch("dr0", &dr0);
+    tGEN->Branch("dr1", &dr1);
 
     // read detector geometry for this configuration
     string detector = "./data/rfull009_sifcch7/sifcch7/sifcch7.pandora";
@@ -511,7 +522,9 @@ int main(int argc, char **argv)
             //vector<fastjet::PseudoJet> Truthjets_axis;
             vector<TLorentzVector> Truthjets_axis;
             vector<int> Truthjets_axis_index;
-            bool isTrueMatch = true;
+            //vector<double> deltaR00, deltaR01, deltaR02;
+            double deltaR00, deltaR01, deltaR02;
+            bool isTrueMatch = false;
             //cout << WW_boson.size() << endl;
             for (unsigned int k = 0; k < sjets_truth.size(); k++)
             {
@@ -524,13 +537,7 @@ int main(int argc, char **argv)
                 double e = sjets_truth[k].e();
                 h_jet_pt_truth_check->Fill(pt);
                 h_jet_eta_truth_check->Fill(eta);
-                h_jet_n_truth->Fill(sjets_truth.size());
                 h_jet_m_truth->Fill(m);
-                //==============================================================
-                // Selection: Each Jet constituents & abs(eta)<1
-                //==============================================================
-                if (TMath::Abs(eta) > 1)
-                    continue;
                 //===============================================================
                 // Matching:  Require Truth jet and W_boson dr < 0.4
                 //===============================================================
@@ -556,16 +563,40 @@ int main(int argc, char **argv)
                         p_using.SetPxPyPzE(sjets_truth[k].px(), sjets_truth[k].py(), sjets_truth[k].pz(), sjets_truth[k].e());
                         Truthjets_axis.push_back(p_using);
                         Truthjets_axis_index.push_back(k);
-                        isTrueMatch = false;
+                        isTrueMatch = true;
                         //cout << "k =" << k << endl;
                     }
+                    if (Truthjets_axis.size() == 0)
+                    {
+                        //deltaR00.push_back(dr);
+                        deltaR00 = dr;
+                        h_effR_j1->Fill(deltaR00);
+                    }
+                    if (Truthjets_axis.size() == 1)
+                    {
+                        //deltaR01.push_back(dr);
+                        deltaR01 = dr;
+                        h_effR_j2->Fill(deltaR01);
+                    }
+                    if (Truthjets_axis.size() == 2)
+                    {
+                        //deltaR02.push_back(dr);
+                        deltaR02 = dr;
+                        h_effR_j3->Fill(deltaR02);
+                    }
                 }
-                if (isTrueMatch)
-                {
+
+                //==============================================================
+                // Selection: Each Jet constituents & abs(eta)<1
+                //==============================================================
+                if (TMath::Abs(eta) > 1)
                     continue;
-                }
+
             } //end of sjets_truth loop
-              // ECAL hits
+            h_jet_n_truth->Fill(sjets_truth.size());
+            h_jet_nn_truth->Fill(Truthjets_axis.size());
+
+            // ECAL hits
             //IMPL::LCCollectionVec *col53 = (IMPL::LCCollectionVec *)evt->getCollection("EcalBarrelHits");
             //int nCL = col53->getNumberOfElements();
             //================================================================
@@ -584,16 +615,16 @@ int main(int argc, char **argv)
                 float y = pos[1];
                 float z = pos[2];
                 double e = mcp->getEnergy();
+                //double e = sqrt(px * px + py * py + pz * pz + m * m);
                 double _tmp = std::sqrt(x * x + y * y + z * z);
                 double px = e * x / _tmp;
                 double py = e * y / _tmp;
                 double pz = e * z / _tmp;
+                //double momentum = TMath::Power((TMath::Power(px, 2) + TMath::Power(py, 2) + TMath::Power(pz, 2)), 0.5);
                 int cellId0 = mcp->getCellID0();
                 int cellId1 = mcp->getCellID1();
                 long long cellId = ((long long)cellId1) << 32 | cellId0;
                 int layer = decoder_ecal->getFieldValue("layer", cellId);
-                // 1st layer on middle
-                double layer_pos_cm = 0.1 * (layer_size_ecal_mm * 0.5 + (layer * layer_size_ecal_mm));
                 double Thit = mcp->getTime();
                 //cout << "CalorimeterHit Thit =" << Thit << endl;
                 //cout << "CalorimeterHit layer =" << layer << endl;
@@ -610,18 +641,8 @@ int main(int argc, char **argv)
                 LParticle p(px, py, pz, e, layer);
                 p.SetCharge(layer);
                 p.SetType(2);
-                p.SetParameter(x * 1000);
-                p.SetParameter(y * 1000);
-                p.SetParameter(z * 1000);
-                //p.SetParameter(layer);
-                p.SetParameter(layer_pos_cm);
-                p.SetParameter(Thit);
-                //if (layer == 1 or layer == 31)
-                //{
-                //    Calhits.push_back(p);
-                //}
-                //
-                //cout << " e=" << e << " phi=" << pj.phi() << " eta=" << pj.eta() << endl;
+                p.SetParameter(Thit); //0
+
                 if (e > 0.5)
                 {
                     avec_hits.push_back(pj);
@@ -636,8 +657,9 @@ int main(int argc, char **argv)
             fastjet::ClusterSequenceArea *thisClustering_reco = new fastjet::ClusterSequenceArea(avec_hits, jet_def, fjAreaDefinition);
             vector<fastjet::PseudoJet> sjets_reco = sorted_by_pt(thisClustering_reco->inclusive_jets(25.0));
             vector<TLorentzVector> Recojets;
+            vector<fastjet::PseudoJet> Recojetstest;
             vector<int> Recojets_axis_index;
-            bool isRecoMatch = true;
+            bool isRecoMatch = false;
             //cout << "sjets_reco.size() =" << sjets_reco.size() << endl;
             //================================================================
             //       Save Recojet
@@ -653,7 +675,7 @@ int main(int argc, char **argv)
                 double e = sjets_reco[k].e();
                 h_jet_pt_reco_check->Fill(pt);
                 h_jet_eta_reco_check->Fill(eta);
-                h_jet_n_reco->Fill(sjets_reco.size());
+
                 h_jet_m_reco->Fill(m);
                 TLorentzVector p_using_reco;
                 p_using_reco.SetPxPyPzE(sjets_reco[k].px(), sjets_reco[k].py(), sjets_reco[k].pz(), sjets_reco[k].e());
@@ -666,17 +688,79 @@ int main(int argc, char **argv)
                     {
                         //cout << "dr =" << p_using_reco.DeltaR(Truthjets_axis[iii]) << endl;
                         Recojets.push_back(p_using_reco);
-                        Recojets_axis_index.push_back(k);
-                        isRecoMatch = false;
+                        Recojets_axis_index.push_back(k); //Pass matching index
+                        Recojetstest.push_back(p_using_reco);
+                        isRecoMatch = true;
+                    }
+                    if (isRecoMatch)
+                    {
+                        break;
                     }
                 }
-                if (isRecoMatch)
-                {
-                    continue;
-                }
-                h_jet_nn_reco->Fill(Recojets_axis_index.size());
+                //if (Recojets.size() == 0)
+                //{
+                //    cout << "0" << endl;
+                //}
 
             } //end of save Recojets loop
+            h_jet_n_reco->Fill(sjets_reco.size());
+            h_jet_nn_reco->Fill(Recojets.size());
+            for (int i = 0; i < Recojets_axis_index.size(); i++)
+            {
+                int pass = Recojets_axis_index[i];
+                //cout << "pass =" << pass << endl;
+                vector<float> ECALhits0, ECALhits31;
+                for (unsigned int j1 = 0; j1 < Calhits.size(); j1++)
+                {
+                    LParticle hit = (LParticle)Calhits.at(j1);
+                    TLorentzVector LE = hit.GetP();
+                    double phi_h = LE.Phi();
+                    double eta_h = LE.PseudoRapidity();
+                    vector<double> par = hit.GetParameters();
+                    int type = hit.GetType(); // ECAL or HCAL
+                    int layer = hit.GetCharge();
+                    double Thit = par[0];
+                    /*
+                    if (layer == 1 && (sjets_reco[pass].DeltaR(LE)) < 0.4)
+                    {
+                        ECALhits0.push_back(Thit);
+                    }
+                    */
+                    /*
+                    if (layer == 31 && (sjets_reco[pass].DeltaR(LE)) < 0.4)
+                    {
+                        ECALhits31.push_back(Thit);
+                        //Timing
+                        T_Reco_sort[pass].push_back(Thit);
+                        T_Reco[pass].push_back(Thit);
+                        //Four_momentum
+                        FourP_dR_Reco[pass].push_back(LE);
+                        //PT
+                        PT_Reco_sort[pass].push_back(LE.Perp());
+                        PT_Reco[pass].push_back(LE.Perp());
+                        //Velocity
+                        vector<PseudoJet> constit = sjets_reco[pass].constituents();
+                        int csize = constit.size();
+                        for (int j = 0; j < csize; j++)
+                        {
+                            double px = constit[j].px();
+                            double py = constit[j].px();
+                            double pz = constit[j].pz();
+                            double e = constit[j].e();
+                            double constit_velocity_vt = sqrt(px * px + py * py + pz * pz) / e;
+                            cout << "Vt = " << constit_velocity_vt << endl;
+                        }
+                        //Eta_selection
+                        event_number_Reco[pass] = event_number_Reco[pass] + 1;
+                        if (abs(eta_h) < 1)
+                        {
+                            Eta_smaller_than_1_event[pass] = Eta_smaller_than_1_event[pass] + 1;
+                        }
+                    }
+                    */
+                }
+            }
+
             vector<vector<TLorentzVector>> FourP_dR_Reco(Recojets.size(), vector<TLorentzVector>());
             vector<vector<int>> PDG_Reco(Recojets.size(), vector<int>());
             vector<vector<double>> PT_Reco_sort(Recojets.size(), vector<double>());
@@ -684,10 +768,8 @@ int main(int argc, char **argv)
             vector<vector<double>> PT_sort_number_only(Recojets.size(), vector<double>());
             vector<vector<double>> T_Reco_sort(Recojets.size(), vector<double>());
             vector<vector<double>> T_Reco(Recojets.size(), vector<double>());
+            vector<vector<double>> velocity_jet(Recojets.size(), vector<double>());
             vector<vector<double>> T_sort_number_only(Recojets.size(), vector<double>());
-            vector<vector<double>> T_first_last_average(2, vector<double>());
-            //vector<double> T_first_last_average;
-            vector<float> ECALhits0, ECALhits31;
             vector<double> mass_Reco = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
             vector<int> event_number_Reco = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
             vector<int> Eta_smaller_than_1_event = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -697,39 +779,35 @@ int main(int argc, char **argv)
             {
                 double pt = Recojets[i].Pt();
                 h_pt_ecal->Fill(pt);
+                vector<float> ECALhits0, ECALhits31;
                 for (unsigned int j1 = 0; j1 < Calhits.size(); j1++)
                 {
                     LParticle hit = (LParticle)Calhits.at(j1);
                     TLorentzVector LE = hit.GetP();
-                    double e_h = LE.E();
                     double phi_h = LE.Phi();
                     double eta_h = LE.PseudoRapidity();
+                    double mass = LE.M();
+                    //cout << "mass =" << mass << endl;
                     vector<double> par = hit.GetParameters();
                     int type = hit.GetType(); // ECAL or HCAL
                     int layer = hit.GetCharge();
-                    int x = int(par[0]);
-                    int y = int(par[1]);
-                    int z = int(par[2]);
-                    double layer_pos_cm = par[3];
-                    double Thit = par[4];
+                    double Thit = par[0];
                     //cout << "Thit =" << Thit << endl;
                     double LogTime = TMath::Log10(Thit);
-                    double avt = par[5];
-                    int pdg = int(par[6]);
-                    int stat = int(par[7]);
-                    double Mass = par[8];
+                    double Momentum = LE.P();
+                    double Energy = LE.Energy();
+                    //cout << "Momentum = " << Momentum << endl;
+                    //cout << "Energy = " << Energy << endl;
+                    double Vt = Momentum / Energy;
+
+                    //cout << "Vt" << Vt << endl;
                     if (layer == 1 && (Recojets[i].DeltaR(LE)) < 0.4)
                     {
-                        T_first_last_average[0].push_back(Thit);
                         ECALhits0.push_back(Thit);
-                        //cout << "First Time is =" << Thit << endl;
                     }
                     if (layer == 31 && (Recojets[i].DeltaR(LE)) < 0.4)
                     {
-                        T_first_last_average[1].push_back(Thit);
                         ECALhits31.push_back(Thit);
-                        //cout << "Last Timing: " << Thit << endl;
-                        mass_Reco[i] = mass_Reco[i] + Mass;
                         //Timing
                         T_Reco_sort[i].push_back(Thit);
                         T_Reco[i].push_back(Thit);
@@ -738,8 +816,8 @@ int main(int argc, char **argv)
                         //PT
                         PT_Reco_sort[i].push_back(LE.Perp());
                         PT_Reco[i].push_back(LE.Perp());
-                        //PDG
-                        PDG_Reco[i].push_back(abs(pdg));
+                        //Velocity
+
                         //Eta_selection
                         event_number_Reco[i] = event_number_Reco[i] + 1;
                         if (abs(eta_h) < 1)
@@ -748,6 +826,7 @@ int main(int argc, char **argv)
                         }
                     }
                 }
+
                 //================================================================
                 //  Save the Time_Difference to TH1D
                 //================================================================
@@ -786,18 +865,14 @@ int main(int argc, char **argv)
             vector<vector<TLorentzVector>> Highest_PT_FourP(Recojets.size(), vector<TLorentzVector>());
             for (unsigned int i = 0; i < Recojets.size(); i++)
             {
-                //cout << "Back_forth =" << Back_forth << endl;
                 if (T_Reco_sort[i].size() == 0)
                     continue;
                 PT_sort_number_only[i].push_back(PT_Reco_sort[i][0]);
                 T_sort_number_only[i].push_back(T_Reco_sort[i][0]);
-                //cout << "PT_sort_number_only size = " << PT_sort_number_only[Back_forth].size() << endl;
                 for (unsigned int uuu = 0; uuu < T_Reco_sort[i].size(); uuu++)
                 {
-                    // << "uuu =" << uuu << endl;
                     if (PT_Reco_sort[i][uuu] != PT_sort_number_only[i].back())
                     {
-                        //cout << "test = " << PT_Reco_sort[Back_forth][uuu] << endl;
                         PT_sort_number_only[i].push_back(PT_Reco_sort[i][uuu]); //只存不同的pt
                     }
                     if (T_Reco_sort[i][uuu] != T_sort_number_only[i].back())
@@ -838,29 +913,6 @@ int main(int argc, char **argv)
             vector<float> dR_Highest_PT_T_Reco;
             vector<float> dR_Highest_PT_PT_Reco;
 
-            /*
-            if (T_first_last_average[0].size() != 0 and T_first_last_average[1].size() != 0)
-            {
-                float Time_Difference = 0;
-                for (unsigned int G = 0; G < T_first_last_average[0].size(); G++)
-                {
-                    T_first = T_first + T_first_last_average[0][G];
-                }
-                for (unsigned int H = 0; H < T_first_last_average[1].size(); H++)
-                {
-                    T_last = T_last + T_first_last_average[1][H];
-                }
-                Time_Difference = T_last - T_first;
-                if (Time_Difference > 0)
-                {
-                    Timing_detecto_ECAL_TDif->Fill(Time_Difference);
-                    cout << "Time_Difference: " << Time_Difference << endl;
-                }
-                else
-                {
-                    cout << "bug" << endl;
-                }
-            }*/
             //===============================
             //  Clear the Truth Level vector
             //===============================
@@ -870,6 +922,7 @@ int main(int argc, char **argv)
             WW_boson.clear();
             avec_truth.clear();
             PDG_with_no_charge.clear();
+            tGEN->Fill();
         }
         lcReader->close();
         delete lcReader;
@@ -889,6 +942,9 @@ int main(int argc, char **argv)
     h_jet_nn_reco->Write();
     h_pt_ecal->Write();
     Timing_detecto_ECAL_TDif->Write();
+    h_effR_j1->Write();
+    h_effR_j2->Write();
+    h_effR_j3->Write();
     //RootFile->Print();
     RootFile->Close();
     return 0;
