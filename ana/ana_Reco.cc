@@ -522,7 +522,7 @@ int main(int argc, char **argv)
             //vector<fastjet::PseudoJet> Truthjets_axis;
             vector<TLorentzVector> Truthjets_axis;
             vector<int> Truthjets_axis_index;
-            //vector<double> deltaR00, deltaR01, deltaR02;
+            vector<double> deltaRRR;
             double deltaR00, deltaR01, deltaR02;
             bool isTrueMatch = false;
             //cout << WW_boson.size() << endl;
@@ -565,24 +565,24 @@ int main(int argc, char **argv)
                         Truthjets_axis_index.push_back(k);
                         isTrueMatch = true;
                         //cout << "k =" << k << endl;
-                    }
-                    if (Truthjets_axis.size() == 0)
-                    {
-                        //deltaR00.push_back(dr);
-                        deltaR00 = dr;
-                        h_effR_j1->Fill(deltaR00);
-                    }
-                    if (Truthjets_axis.size() == 1)
-                    {
-                        //deltaR01.push_back(dr);
-                        deltaR01 = dr;
-                        h_effR_j2->Fill(deltaR01);
-                    }
-                    if (Truthjets_axis.size() == 2)
-                    {
-                        //deltaR02.push_back(dr);
-                        deltaR02 = dr;
-                        h_effR_j3->Fill(deltaR02);
+                        if (Truthjets_axis.size() == 0)
+                        {
+                            //deltaR00.push_back(dr);
+                            deltaR00 = dr;
+                            h_effR_j1->Fill(deltaR00);
+                        }
+                        if (Truthjets_axis.size() == 1)
+                        {
+                            //deltaR01.push_back(dr);
+                            deltaR01 = dr;
+                            h_effR_j2->Fill(deltaR01);
+                        }
+                        if (Truthjets_axis.size() == 2)
+                        {
+                            //deltaR02.push_back(dr);
+                            deltaR02 = dr;
+                            h_effR_j3->Fill(deltaR02);
+                        }
                     }
                 }
 
