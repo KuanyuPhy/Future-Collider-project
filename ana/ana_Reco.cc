@@ -530,6 +530,14 @@ int main(int argc, char **argv)
                                 for (int k = 0; k < (mcp->getDaughters().size()); k++)
                                 {
                                     cout << "W_3Daughters =" << mcp->getDaughters()[k]->getPDG() << endl;
+                                    if ((abs(mcp->getDaughters()[k]->getPDG()) < 19) && (abs(mcp->getDaughters()[k]->getPDG()) > 10))
+                                    {
+                                        cout << "lepton decay" << endl;
+                                    }
+                                    else
+                                    {
+                                        cout << "hadronic decay" << endl;
+                                    }
                                 }
                             }
                         }
