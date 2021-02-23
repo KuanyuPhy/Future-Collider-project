@@ -279,6 +279,7 @@ int main(int argc, char **argv)
     TH1D *h_jet_n_truth = new TH1D("h_jet_n_truth", "Nr of truth jets", 10, 0, 10);      //before match
     TH1D *h_jet_nn_truth = new TH1D("h_jet_nn_truth", "Nr of truth jets", 10, 0, 10);    //after match
     TH1D *Wbosn_nn = new TH1D("Wbosn_nn", "Nr of Wboson", 10, 0, 10);
+    TH1D *Wbosn_ss = new TH1D("Wbosn_ss", "Status of Wboson", 5, 0, 5);
     TH1D *h_jet_m_truth = new TH1D("jet_m_truth", "Mass [GeV]", 100, 0, 100);
 
     TH1D *h_jet_pt_reco_check = new TH1D("h_jet_pt_reco_check", "pT [GeV] ", 100, 0, 2700); // plus Geant4
@@ -489,6 +490,7 @@ int main(int argc, char **argv)
                 //================================================
                 if (abs(pdgid) == WW_pdg)
                 {
+                    Wbosn_ss->Fill(gs);
                     if (gs == 2)
                     {
                         for (unsigned int j = 0; j < (mcp->getDaughters().size()); j++)
@@ -517,6 +519,10 @@ int main(int argc, char **argv)
                     {
                         Wboson_three = true;
                     }
+                    W_pdg = mcp->getPDG();
+                    W_p_pdg = mcp->getParents()[0]->getPDG();
+                    W_d_pdg = mcp->getDaughters()[0]->getPDG();
+                    W_status = mcp->getGeneratorStatus();
                     for (int j = 0; j < nMCP; ++j)
                     {
                         if (mcp->getDaughters().size() != 0)
@@ -542,8 +548,8 @@ int main(int argc, char **argv)
                             }
                         }
                     } // End Second MC loop
-                }     // End W boson ID
-            }         // End first MC loop
+                } // End W boson ID
+            }     // End first MC loop
             //cout << WW_boson.size() << endl;
             Wbosn_nn->Fill(WW_boson.size());
             for (int i = 0; i < nMCP; ++i)
@@ -1315,6 +1321,7 @@ int main(int argc, char **argv)
     h_effR_j2->Write();
     h_effR_j3->Write();
     Wbosn_nn->Write();
+    Wbosn_ss->Write();
     //RootFile->Print();
     RootFile->Close();
     return 0;
