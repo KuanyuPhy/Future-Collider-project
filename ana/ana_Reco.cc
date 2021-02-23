@@ -473,6 +473,9 @@ int main(int argc, char **argv)
             for (int i = 0; i < nMCP; ++i)
             {
                 bool LWboson = false;
+                bool Wboson_zero = false;
+                bool Wboson_one = false;
+                bool Wboson_three = false;
                 int WW_pdg = 24;
                 EVENT::MCParticle *mcp = (EVENT::MCParticle *)col->getElementAt(i);
                 int gs = mcp->getGeneratorStatus();
@@ -484,38 +487,54 @@ int main(int argc, char **argv)
                 //================================================
                 //                  Check W is hadronic decay
                 //================================================
-                if (mcp->getParents().size() != 0)
+                if (abs(pdgid) == WW_pdg)
                 {
-                    if (abs(pdgid) == WW_pdg)
+                    if (gs == 2)
                     {
-                        if (gs == 2)
+                        for (unsigned int j = 0; j < (mcp->getDaughters().size()); j++)
                         {
-                            for (unsigned int j = 0; j < (mcp->getDaughters().size()); j++)
+                            if ((abs(mcp->getDaughters()[j]->getPDG()) < 19) && (abs(mcp->getDaughters()[j]->getPDG()) > 10))
                             {
-                                if ((abs(mcp->getDaughters()[j]->getPDG()) < 19) && (abs(mcp->getDaughters()[j]->getPDG()) > 10))
-                                {
-                                    LWboson = true;
-                                }
-                            }
-                            if (!LWboson)
-                            {
-                                TLorentzVector p;
-                                p.SetPxPyPzE(mcp->getMomentum()[0], mcp->getMomentum()[1], mcp->getMomentum()[2], mcp->getMomentum()[3]);
-                                WW_boson.push_back(p);
+                                LWboson = true;
                             }
                         }
-                        else
+                        if (!LWboson)
                         {
-                            //cout << "W_pdg =" << W_pdg << endl;
-                            //cout << "W_pdg =" << W_pdg << endl;
-                            //cout << "W_pdg =" << W_p_pdg << endl;
-                            //cout << "W_pdg =" << W_status << endl;
-                            W_pdg = mcp->getPDG();
-                            W_p_pdg = mcp->getParents()[0]->getPDG();
-                            W_d_pdg = mcp->getDaughters()[0]->getPDG();
-                            W_status = mcp->getGeneratorStatus();
+                            TLorentzVector p;
+                            p.SetPxPyPzE(mcp->getMomentum()[0], mcp->getMomentum()[1], mcp->getMomentum()[2], mcp->getMomentum()[3]);
+                            WW_boson.push_back(p);
                         }
                     }
+                    else if (gs == 0)
+                    {
+                        Wboson_zero = true;
+                    }
+                    else if (gs == 1)
+                    {
+                        Wboson_one = true;
+                    }
+                    else if (gs == 3)
+                    {
+                        Wboson_three = true;
+                    }
+                    for (int j = 0; j < nMCP; ++j)
+                    {
+                        if (mcp->getDaughters().size() != 0)
+                        {
+                            if (Wboson_zero)
+                            {
+                                cout << "0" << endl;
+                            }
+                            if (Wboson_three)
+                            {
+                                for (int k = 0; k < (mcp->getDaughters().size()); k++)
+                                {
+                                    cout << "W_3Daughters =" << mcp->getDaughters()[k]->getPDG() << endl;
+                                }
+                            }
+                        }
+                    }
+                    //cout << "gs =" << gs << endl;
                 }
             }
             //cout << WW_boson.size() << endl;
