@@ -533,10 +533,9 @@ int main(int argc, char **argv)
                                 }
                             }
                         }
-                    }
-                    //cout << "gs =" << gs << endl;
-                }
-            }
+                    } // End Second MC loop
+                }     // End W boson ID
+            }         // End first MC loop
             //cout << WW_boson.size() << endl;
             Wbosn_nn->Fill(WW_boson.size());
             for (int i = 0; i < nMCP; ++i)
