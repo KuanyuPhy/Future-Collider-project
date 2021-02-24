@@ -353,15 +353,17 @@ int main(int argc, char **argv)
     T_Reco_T->Branch("dR_Tr3_V_Reco", &dR_Tr3_V_Reco, "dR_Tr3_V_Reco/F");
     T_Reco_T->Branch("dR_Tr4_V_Reco", &dR_Tr4_V_Reco, "dR_Tr4_V_Reco/F");
 
-    Float_t dr0;
-    Float_t dr1;
-    Int_t W_pdg;
-    Double_t W_p_pdg;
-    Double_t W_d_pdg;
-    Double_t W_status;
+    vector<Int_t> MC_particle_ID;
+    vector<Int_t> MC_particle_status;
+    vector<Int_t> W_pdg;
+    vector<Double_t> W_p_pdg;
+    vector<Double_t> W_d_pdg;
+    vector<Double_t> W_status;
+    vector<Double_t> Event_number;
     TTree *tGEN = new TTree("tGEN", "Tree with vectors");
-    tGEN->Branch("dr0", &dr0);
-    tGEN->Branch("dr1", &dr1);
+    tGEN->Branch("Event_number", &Event_number);
+    tGEN->Branch("MC_particle_ID", &MC_particle_ID);
+    tGEN->Branch("MC_particle_status", &MC_particle_status);
     tGEN->Branch("W_pdg", &W_pdg);
     tGEN->Branch("W_p_pdg", &W_p_pdg);
     tGEN->Branch("W_d_pdg", &W_d_pdg);
@@ -426,7 +428,9 @@ int main(int argc, char **argv)
     int MaxEvents = 100000000;
 
     int nEvents = 0;
-    int nnEvents = 0;
+    vector<int> nnEvents;
+    ofstream filess;
+    filess.open("W_boson_1.txt");
     // loop over all files
     for (unsigned int mfile = 0; mfile < files.size(); mfile++)
     {
@@ -442,21 +446,24 @@ int main(int argc, char **argv)
         if (nEvents > MaxEvents)
             break;
         //----------- the event loop -----------
+
         while ((evt = lcReader->readNextEvent()) != 0)
         {
-            if (nEvents == 0)
-                UTIL::LCTOOLS::dumpEvent(evt);
-
-            // UTIL::LCTOOLS::dumpEvent( evt ) ;
-
+            //if (nEvents == 0)
+            //    UTIL::LCTOOLS::dumpEvent(evt);
+            //cout << nEvents << endl;
             nEvents++;
+
+            int event = evt->getEventNumber();
+            std::cout << "Event : " << event << std::endl;
+            Event_number.push_back(event);
             if ((nEvents < 100 && nEvents % 10 == 0) || (nEvents > 100 && nEvents % 200 == 0))
                 cout << " # Events=" << nEvents << endl;
-
             if (nEvents > MaxEvents)
                 break;
-
             h_debug->Fill(1.0);
+
+            Event_number.push_back(nEvents);
             //create vector
             vector<int> PDG_with_no_charge = {0};
             vector<PseudoJet> avec_truth; // created by generator
@@ -468,13 +475,20 @@ int main(int argc, char **argv)
             int Zprime_pdg = 32;
             int Photon_pdg = 22;
             int Muon_pdg = 13;
+            bool Wboson_zero = false;
+
             //===============================
             //        for Z' -> WW
             //===============================
+            filess << "===============================\n";
+            filess << "Event    \t" << event << "\n";
+            filess << "===============================\n";
+            filess << "MC ID    \t"
+                   << "MC status\t"
+                   << "MC Daughter ID\t\n";
             for (int i = 0; i < nMCP; ++i)
             {
                 bool LWboson = false;
-                bool Wboson_zero = false;
                 bool Wboson_one = false;
                 bool Wboson_three = false;
                 int WW_pdg = 24;
@@ -485,6 +499,8 @@ int main(int argc, char **argv)
                 double pz = mcp->getMomentum()[2];
                 double e = mcp->getEnergy();
                 int pdgid = mcp->getPDG();
+                MC_particle_ID.push_back(mcp->getPDG());
+                MC_particle_status.push_back(mcp->getGeneratorStatus());
                 //================================================
                 //                  Check W is hadronic decay
                 //================================================
@@ -506,50 +522,30 @@ int main(int argc, char **argv)
                             p.SetPxPyPzE(mcp->getMomentum()[0], mcp->getMomentum()[1], mcp->getMomentum()[2], mcp->getMomentum()[3]);
                             WW_boson.push_back(p);
                         }
-                    }
-                    else if (gs == 0)
-                    {
-                        Wboson_zero = true;
-                    }
-                    else if (gs == 1)
-                    {
-                        Wboson_one = true;
-                    }
-                    else if (gs == 3)
-                    {
-                        Wboson_three = true;
-                    }
-                    W_pdg = mcp->getPDG();
-                    W_p_pdg = mcp->getParents()[0]->getPDG();
-                    W_d_pdg = mcp->getDaughters()[0]->getPDG();
-                    W_status = mcp->getGeneratorStatus();
+                    } //End of Status ==2
+                    W_pdg.push_back(mcp->getPDG());
+                    W_p_pdg.push_back(mcp->getParents()[0]->getPDG());
+                    W_d_pdg.push_back(mcp->getDaughters()[0]->getPDG());
+                    W_status.push_back(mcp->getGeneratorStatus());
+                } // End W boson ID
+                if (WW_boson.size() == 1)
+                {
                     for (int j = 0; j < nMCP; ++j)
                     {
-                        if (mcp->getDaughters().size() != 0)
+                        EVENT::MCParticle *mcp = (EVENT::MCParticle *)col->getElementAt(j);
+
+                        filess << mcp->getPDG() << "      \t" << mcp->getGeneratorStatus() << "\t\t\t";
+                        for (unsigned int k = 0; k < (mcp->getDaughters().size()); k++)
                         {
-                            if (Wboson_zero)
-                            {
-                                cout << "0" << endl;
-                            }
-                            if (Wboson_three)
-                            {
-                                for (int k = 0; k < (mcp->getDaughters().size()); k++)
-                                {
-                                    cout << "W_3Daughters =" << mcp->getDaughters()[k]->getPDG() << endl;
-                                    if ((abs(mcp->getDaughters()[k]->getPDG()) < 19) && (abs(mcp->getDaughters()[k]->getPDG()) > 10))
-                                    {
-                                        cout << "lepton decay" << endl;
-                                    }
-                                    else
-                                    {
-                                        cout << "hadronic decay" << endl;
-                                    }
-                                }
-                            }
+                            filess << mcp->getDaughters()[k]->getPDG() << "\t";
                         }
+                        filess << "\n";
+                        //cout << "MC ID = " << mcp->getPDG() << endl;
+                        //cout << "MC status = " << mcp->getGeneratorStatus() << endl;
                     } // End Second MC loop
-                } // End W boson ID
-            }     // End first MC loop
+                }
+            } // End first MC loop
+
             //cout << WW_boson.size() << endl;
             Wbosn_nn->Fill(WW_boson.size());
             for (int i = 0; i < nMCP; ++i)
@@ -1300,6 +1296,7 @@ int main(int argc, char **argv)
         delete lcReader;
     }
     RootFile->Write();
+    h_debug->Write();
     h_jet_n_truth->Write();
     h_jet_pt_truth_check->Write();
     h_jet_eta_truth_check->Write();
@@ -1324,5 +1321,6 @@ int main(int argc, char **argv)
     Wbosn_ss->Write();
     //RootFile->Print();
     RootFile->Close();
+    filess.close();
     return 0;
 }
