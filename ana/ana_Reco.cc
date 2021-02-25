@@ -430,7 +430,7 @@ int main(int argc, char **argv)
     int nEvents = 0;
     vector<int> nnEvents;
     ofstream filess;
-    filess.open("W_boson_1.txt");
+    filess.open("W_boson_0.txt");
     // loop over all files
     for (unsigned int mfile = 0; mfile < files.size(); mfile++)
     {
@@ -469,7 +469,8 @@ int main(int argc, char **argv)
             vector<PseudoJet> avec_truth; // created by generator
             vector<fastjet::PseudoJet> WW_boson;
             // get truth
-            IMPL::LCCollectionVec *col = (IMPL::LCCollectionVec *)evt->getCollection("MCParticle");
+            std::string mcpName("MCParticle");
+            IMPL::LCCollectionVec *col = (IMPL::LCCollectionVec *)evt->getCollection(mcpName);
             int nMCP = col->getNumberOfElements();
             //Particle ID
             int Zprime_pdg = 32;
@@ -504,48 +505,46 @@ int main(int argc, char **argv)
                 //================================================
                 //                  Check W is hadronic decay
                 //================================================
-                if (abs(pdgid) == WW_pdg)
+                if (TMath::Abs(pdgid) == WW_pdg)
                 {
                     Wbosn_ss->Fill(gs);
-                    if (gs == 2)
+                    //if (gs == 2)
+                    //{
+                    for (unsigned int j = 0; j < (mcp->getDaughters().size()); j++)
                     {
-                        for (unsigned int j = 0; j < (mcp->getDaughters().size()); j++)
+
+                        if ((TMath::Abs(mcp->getDaughters()[j]->getPDG()) < 19) && (TMath::Abs(mcp->getDaughters()[j]->getPDG()) > 10))
                         {
-                            if ((abs(mcp->getDaughters()[j]->getPDG()) < 19) && (abs(mcp->getDaughters()[j]->getPDG()) > 10))
-                            {
-                                LWboson = true;
-                            }
+                            LWboson = true;
                         }
-                        if (!LWboson)
+                        else if ((TMath::Abs(mcp->getDaughters()[j]->getPDG()) == 24))
                         {
-                            TLorentzVector p;
-                            p.SetPxPyPzE(mcp->getMomentum()[0], mcp->getMomentum()[1], mcp->getMomentum()[2], mcp->getMomentum()[3]);
-                            WW_boson.push_back(p);
+                            LWboson = true;
                         }
-                    } //End of Status ==2
-                    W_pdg.push_back(mcp->getPDG());
-                    W_p_pdg.push_back(mcp->getParents()[0]->getPDG());
-                    W_d_pdg.push_back(mcp->getDaughters()[0]->getPDG());
-                    W_status.push_back(mcp->getGeneratorStatus());
+                    }
+                    if (!LWboson)
+                    {
+                        WW_boson.push_back(PseudoJet(px, py, pz, e));
+                    }
+                    //}
                 } // End W boson ID
-                if (WW_boson.size() == 1)
+            }     // End first MC loop
+            if (WW_boson.size() == 0)
+            {
+                for (int j = 0; j < nMCP; ++j)
                 {
-                    for (int j = 0; j < nMCP; ++j)
+                    EVENT::MCParticle *mcp = (EVENT::MCParticle *)col->getElementAt(j);
+
+                    filess << mcp->getPDG() << "      \t" << mcp->getGeneratorStatus() << "\t\t\t";
+                    for (unsigned int k = 0; k < (mcp->getDaughters().size()); k++)
                     {
-                        EVENT::MCParticle *mcp = (EVENT::MCParticle *)col->getElementAt(j);
-
-                        filess << mcp->getPDG() << "      \t" << mcp->getGeneratorStatus() << "\t\t\t";
-                        for (unsigned int k = 0; k < (mcp->getDaughters().size()); k++)
-                        {
-                            filess << mcp->getDaughters()[k]->getPDG() << "\t";
-                        }
-                        filess << "\n";
-                        //cout << "MC ID = " << mcp->getPDG() << endl;
-                        //cout << "MC status = " << mcp->getGeneratorStatus() << endl;
-                    } // End Second MC loop
-                }
-            } // End first MC loop
-
+                        filess << mcp->getDaughters()[k]->getPDG() << "\t";
+                    }
+                    filess << "\n";
+                    //cout << "MC ID = " << mcp->getPDG() << endl;
+                    //cout << "MC status = " << mcp->getGeneratorStatus() << endl;
+                } // End Second MC loop
+            }
             //cout << WW_boson.size() << endl;
             Wbosn_nn->Fill(WW_boson.size());
             for (int i = 0; i < nMCP; ++i)
@@ -558,53 +557,26 @@ int main(int argc, char **argv)
                 double m = mcp->getMomentum()[3];
                 double e = mcp->getEnergy();
                 int gs = mcp->getGeneratorStatus();
-                if (mcp->getParents().size() != 0)
+                //================================================================
+                //          exclude Photon decay from muon
+                //================================================================
+                fastjet::PseudoJet p(px, py, pz, e);
+                p.set_user_index(pdgid);
+                if (gs == 1)
                 {
-                    /*
-                    if (gs == 2)
+                    //check photon from mu
+                    if (abs(pdgid) == 22 and abs(mcp->getParents()[0]->getPDG()) == 13)
                     {
-                        if (abs(pdgid) == 24)
+                        pz = abs(mcp->getParents()[0]->getMomentum()[2]);
+                        if (pz > 2500)
                         {
-                            for (unsigned int j = 0; j < (mcp->getDaughters().size()); j++)
-                            {
-                                if ((abs(mcp->getDaughters()[j]->getPDG()) < 19) and (abs(mcp->getDaughters()[j]->getPDG()) > 10))
-                                {
-                                    LWboson = true;
-                                }
-                            }
+                            continue;
                         }
-                        if (LWboson)
-                        {
-                            PseudoJet p(px, py, pz, e);
-                            WW_boson.push_back(p);
-                        }
-                    }*/
-                    //================================================================
-                    //          exclude Photon decay from muon
-                    //================================================================
-                    fastjet::PseudoJet p(px, py, pz, e);
-                    p.set_user_index(pdgid);
-                    if (gs == 1)
+                    }
+                    //Pt < 1.5 GeV can not reach ECAL
+                    if (p.pt() > minPtConst)
                     {
-                        //check photon from mu
-                        if (abs(pdgid) == 22 and abs(mcp->getParents()[0]->getPDG()) == 13)
-                        {
-                            pz = abs(mcp->getParents()[0]->getMomentum()[2]);
-                            if (pz > 2500)
-                            {
-                                continue;
-                            }
-                        }
-                        //remove photon
-                        //if (abs(pdgid) == 22)
-                        //{
-                        //    continue;
-                        //}
-                        //Pt < 1.5 GeV can not reach ECAL
-                        if (p.pt() > minPtConst)
-                        {
-                            avec_truth.push_back(p);
-                        }
+                        avec_truth.push_back(p);
                     }
                 }
             }
@@ -683,540 +655,7 @@ int main(int argc, char **argv)
             {
                 cout << WW_boson.size() << endl;
             }*/
-            //================================================================
-            // Get Collection from EcalBarrelHits (Before sampling function)
-            //=========================================================
-            vector<PseudoJet> avec_hits_raw;
-            vector<PseudoJet> avec_hits_raw_sf;
-            vector<LParticle> simhits;
-            double ecalsum_raw = 0;
-            IMPL::LCCollectionVec *col53 = (IMPL::LCCollectionVec *)evt->getCollection("EcalBarrelHits");
-            int nCL = col53->getNumberOfElements();
-            for (int i = 0; i < nCL; ++i)
-            {
-                EVENT::SimCalorimeterHit *mcp = (EVENT::SimCalorimeterHit *)col53->getElementAt(i);
-                const float *pos = mcp->getPosition();
-                float x = pos[0];
-                float y = pos[1];
-                float z = pos[2];
-                double e = mcp->getEnergy();
-                double _tmp = std::sqrt(x * x + y * y + z * z);
-                double px = e * x / _tmp;
-                double py = e * y / _tmp;
-                double pz = e * z / _tmp;
-                // Get the two 32-bit chunks of the ID.
-                int cellId0 = mcp->getCellID0();
-                int cellId1 = mcp->getCellID1();
-                // Make a 64-bit id for the IDDecoder.  The type MUST be "long long" and not "long".  (from Tony Johnson)
-                long long cellId = ((long long)cellId1) << 32 | cellId0;
-                int layer = decoder_ecal->getFieldValue("layer", cellId);
-                double Thit = mcp->getTimeCont(0);
-                // number of MC contributions to the hit
-                // calculate average time  in [ns]
-                double avt = 0;
-                double ave = 0;
-                for (int jj = 0; jj < mcp->getNMCContributions(); jj++)
-                {
-                    avt = avt + mcp->getEnergyCont(jj) * mcp->getTimeCont(jj);
-                    ave = ave + mcp->getEnergyCont(jj);
-                }
-                avt = avt / ave;
-                ecalsum_raw = ecalsum_raw + e;
-                // fill hits
-                LParticle p(px, py, pz, e, layer);
-                p.SetCharge(layer);
-                p.SetType(2); // ECAL
-                p.SetStatus(mcp->getNMCContributions());
-                p.SetParameter(x); //0
-                p.SetParameter(y); //1
-                p.SetParameter(z); //2
-                EVENT::MCParticle *pmm = mcp->getParticleCont(0);
-                int pdg = pmm->getPDG();
-                int status = pmm->getSimulatorStatus();
-                float rawTime = Thit;
-                float FAM = pmm->getMass();
-                int nCont = mcp->getNMCContributions();
-                for (int jjj = 0; jjj < nCont; jjj++)
-                {
-                    if (mcp->getTimeCont(jjj) < rawTime)
-                    {
-                        rawTime = mcp->getTimeCont(jjj);
-                    }
-                    EVENT::MCParticle *pmm = mcp->getParticleCont(jjj);
-                    pdg = pmm->getPDG();
-                    status = pmm->getSimulatorStatus();
-                }
-                p.SetParameter(rawTime);        //3 fastest hit
-                p.SetParameter(avt);            //4 average hit time
-                p.SetParameter((double)pdg);    //5
-                p.SetParameter((double)status); //6
-                p.SetParameter((double)FAM);    //7
-                if (mcp->getNMCContributions() > 0)
-                {
-                    EVENT::MCParticle *pmm = mcp->getParticleCont(0);
-                    int pdg = pmm->getPDG();
-                    int status = pmm->getSimulatorStatus();
-                    p.SetParameter(pdg);            //8
-                    p.SetParameter((double)status); //9
-                    //p.SetParameter( (double)(mcp->getGeneratorStatus()));
-                }
-                p.SetParameter(px); //10
-                p.SetParameter(py); //11
-                p.SetParameter(pz); //12
-                if (layer == 1 or layer == 31)
-                    simhits.push_back(p);
-                // correct by SF (1st, 2nd, 3rd layer are 1., 0.0184, 0.0092)
-                double ECAL_SF = 0.0184;
-                e = e / ECAL_SF;
-                px = e * x / _tmp;
-                py = e * y / _tmp;
-                pz = e * z / _tmp;
-                PseudoJet pj_sf(px, py, pz, e);
-                avec_hits_raw_sf.push_back(pj_sf);
-            }
-            //================================================================
-            // Get Collection from EM_BARREL (after sampling function)
-            //================================================================
-            vector<PseudoJet> avec_hits;
-            vector<LParticle> Calhits;
-            double ecalsum = 0;
-            IMPL::LCCollectionVec *col52 = (IMPL::LCCollectionVec *)evt->getCollection("EM_BARREL");
-            nCL = col52->getNumberOfElements();
-            for (int i = 0; i < nCL; i++)
-            {
-                EVENT::CalorimeterHit *mcp = (EVENT::CalorimeterHit *)col52->getElementAt(i);
-                const float *pos = mcp->getPosition();
-                float x = pos[0];
-                float y = pos[1];
-                float z = pos[2];
-                double e = mcp->getEnergy();
-                //double e = sqrt(px * px + py * py + pz * pz + m * m);
-                double _tmp = std::sqrt(x * x + y * y + z * z);
-                double px = e * x / _tmp;
-                double py = e * y / _tmp;
-                double pz = e * z / _tmp;
-                //double momentum = TMath::Power((TMath::Power(px, 2) + TMath::Power(py, 2) + TMath::Power(pz, 2)), 0.5);
-                int cellId0 = mcp->getCellID0();
-                int cellId1 = mcp->getCellID1();
-                long long cellId = ((long long)cellId1) << 32 | cellId0;
-                int layer = decoder_ecal->getFieldValue("layer", cellId);
-                double Thit = mcp->getTime();
-                //cout << "CalorimeterHit Thit =" << Thit << endl;
-                //cout << "CalorimeterHit layer =" << layer << endl;
-                ecalsum = ecalsum + e;
-                PseudoJet pj(px, py, pz, e);
-                double eta_r = pj.pseudorapidity();
-                double phi_r = pj.phi();
-                double pt_r = pj.pt();
-                // fill hits
-                LParticle p(px, py, pz, e, layer);
-                p.SetCharge(layer);
-                p.SetType(2);
-                p.SetParameter(x);    //0
-                p.SetParameter(y);    //1
-                p.SetParameter(z);    //2
-                p.SetParameter(Thit); //3
-                if (e > 0.5)
-                {
-                    avec_hits.push_back(pj);
-                    Calhits.push_back(p);
-                    if (avec_hits.size() == 0)
-                    {
-                        cout << "avec_hits size =" << avec_hits.size() << endl;
-                    }
-                }
-            }
-            // ----------------- cluster jets --------------------------
-            fastjet::ClusterSequenceArea *thisClustering_reco = new fastjet::ClusterSequenceArea(avec_hits_raw_sf, jet_def, fjAreaDefinition);
-            vector<fastjet::PseudoJet> sjets_reco = sorted_by_pt(thisClustering_reco->inclusive_jets(25.0));
-            vector<TLorentzVector> Recojets;
-            vector<fastjet::PseudoJet> Recojetstest;
-            vector<int> Recojets_axis_index;
-            bool isRecoMatch = false;
-            vector<vector<TLorentzVector>> FourP_dR_Reco(sjets_reco.size(), vector<TLorentzVector>());
-            vector<vector<int>> PDG_Reco(sjets_reco.size(), vector<int>());
-            vector<vector<double>> PT_Reco_sort(sjets_reco.size(), vector<double>());
-            vector<vector<double>> PT_Reco(sjets_reco.size(), vector<double>({}));
-            vector<vector<double>> PT_sort_number_only(sjets_reco.size(), vector<double>());
-            vector<vector<double>> T_Reco_sort(sjets_reco.size(), vector<double>());
-            vector<vector<double>> T_Reco(sjets_reco.size(), vector<double>());
-            vector<vector<double>> T_sort_number_only(sjets_reco.size(), vector<double>());
-            vector<vector<double>> velocity_jet(sjets_reco.size(), vector<double>());
-            vector<vector<double>> velocity_jet_sort(sjets_reco.size(), vector<double>());
-            vector<vector<double>> velocity_number_only(sjets_reco.size(), vector<double>());
 
-            vector<double> mass_Reco = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            vector<int> event_number_Reco = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            vector<int> Eta_smaller_than_1_event = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            vector<int> event_number_Reco_for_mass = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            vector<int> Eta_smaller_than_1_event_for_mass = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            //cout << "sjets_reco.size() =" << sjets_reco.size() << endl;
-            //================================================================
-            //       Save Recojet
-            //================================================================
-            for (unsigned int k = 0; k < sjets_reco.size(); k++)
-            {
-                double eta = sjets_reco[k].pseudorapidity();
-                double phi = sjets_reco[k].phi();
-                if (phi < 0)
-                    phi = phi + k2PI;
-                double m = sjets_reco[k].m();
-                double pt = sjets_reco[k].perp();
-                double e = sjets_reco[k].e();
-                h_jet_pt_reco_check->Fill(pt);
-                h_jet_eta_reco_check->Fill(eta);
-                h_jet_m_reco->Fill(m);
-                TLorentzVector p_using_reco;
-                p_using_reco.SetPxPyPzE(sjets_reco[k].px(), sjets_reco[k].py(), sjets_reco[k].pz(), sjets_reco[k].e());
-                //=====================================================
-                // Matching:  Require Truth jet and ReoJet dr < 0.4
-                //=====================================================
-                for (unsigned int iii = 0; iii < Truthjets_axis.size(); iii++)
-                {
-                    if (p_using_reco.DeltaR(Truthjets_axis[iii]) < 0.4)
-                    {
-                        //cout << "dr =" << p_using_reco.DeltaR(Truthjets_axis[iii]) << endl;
-                        Recojets.push_back(p_using_reco);
-                        Recojets_axis_index.push_back(k); //Pass matching index
-                        Recojetstest.push_back(p_using_reco);
-                        isRecoMatch = true;
-                    }
-                }
-                if (isRecoMatch == false)
-                {
-                    continue;
-                }
-                vector<float> ECALhits0, ECALhits31;
-                for (unsigned int j1 = 0; j1 < simhits.size(); j1++)
-                {
-                    LParticle hit = (LParticle)simhits.at(j1);
-                    TLorentzVector LE = hit.GetP();
-                    double phi_h = LE.Phi();
-                    double eta_h = LE.PseudoRapidity();
-                    double Energy = LE.Energy();
-                    //double momentum = LE.P();
-                    //cout << "Energy =" << Energy << endl;
-                    //cout << "momentum =" << momentum << endl;
-                    vector<double> par = hit.GetParameters();
-                    int type = hit.GetType(); // ECAL or HCAL
-                    int layer = hit.GetCharge();
-                    int x = int(par[0]);
-                    int y = int(par[1]);
-                    int z = int(par[2]);
-                    double Thit = par[3];
-                    double avt = par[4];
-                    int pdg = int(par[5]);
-                    int stat = int(par[6]);
-                    double Mass = par[7];
-                    double px = par[10];
-                    double py = par[11];
-                    double pz = par[12];
-                    double momentum = sqrt(px * px + py * py + pz * pz);
-                    double e = sqrt(px * px + py * py + pz * pz + Mass * Mass);
-                    //cout << "Energy =" << e << endl;
-                    //cout << "momentum =" << momentum << endl;
-                    double Velocity = momentum / e;
-                    //cout << "Velocity =" << Velocity << endl;
-                    for (unsigned int k1 = 0; k1 < Calhits.size(); k1++)
-                    {
-                        LParticle p = (LParticle)Calhits.at(k1);
-                        TLorentzVector LE_1 = p.GetP();
-                        vector<double> par1 = p.GetParameters();
-                        int CellX_Cal = int(par1[0]);
-                        int CellY_Cal = int(par1[1]);
-                        int CellZ_Cal = int(par1[2]);
-                        TLorentzVector temp_jet(0, 0, 0, 0);
-                        temp_jet.SetPxPyPzE(sjets_reco[k].px(),
-                                            sjets_reco[k].py(),
-                                            sjets_reco[k].pz(),
-                                            sjets_reco[k].e());
-                        if (layer == 1 && (temp_jet.DeltaR(LE_1)) < 0.4 && x == CellX_Cal && y == CellY_Cal && z == CellZ_Cal)
-                        {
-                            ECALhits0.push_back(Thit);
-                        }
-                        if (layer == 31 && temp_jet.DeltaR(LE_1) < 0.4 && x == CellX_Cal && y == CellY_Cal && z == CellZ_Cal)
-                        {
-                            ECALhits31.push_back(Thit);
-                            T_Reco_sort[k].push_back(Thit);
-                            T_Reco[k].push_back(Thit);
-                            //Four_momentum
-                            FourP_dR_Reco[k].push_back(LE);
-                            mass_Reco[k] = mass_Reco[k] + Mass;
-                            //PT
-                            PT_Reco_sort[k].push_back(LE.Perp());
-                            PT_Reco[k].push_back(LE.Perp());
-                            //Eta_selection
-                            event_number_Reco[k] = event_number_Reco[k] + 1;
-                            //Velocity
-                            velocity_jet[k].push_back(Velocity);
-                            velocity_jet_sort[k].push_back(Velocity);
-                            //PDG
-                            PDG_Reco[k].push_back(abs(pdg));
-                            if (abs(eta_h) < 1)
-                            {
-                                Eta_smaller_than_1_event[k] = Eta_smaller_than_1_event[k] + 1;
-                            }
-                        }
-                    }
-                }
-                //================================================================
-                //  Save the Time_Difference to TH1D
-                //================================================================
-                double T_first = 0;
-                double T_last = 0;
-                if (ECALhits31.size() > 0 && ECALhits0.size() > 0)
-                {
-                    float Time_Difference = 0;
-                    for (unsigned int G = 0; G < ECALhits0.size(); G++)
-                    {
-                        T_first = T_first + ECALhits0[G];
-                    }
-                    for (unsigned int H = 0; H < ECALhits31.size(); H++)
-                    {
-                        T_last = T_last + ECALhits31[H];
-                    }
-                    Time_Difference = (T_last / ECALhits31.size()) - (T_first / ECALhits0.size());
-                    if (Time_Difference > 0)
-                    {
-                        Timing_detecto_ECAL_TDif->Fill(Time_Difference);
-                    }
-                }
-            } //end of save Recojets loop
-
-            h_jet_n_reco->Fill(sjets_reco.size());
-            h_jet_nn_reco->Fill(Recojets.size());
-            //==========================================================================================
-            //   Sort from small to big (T_Reco_sort and PT_Reco_sort and velocity_jet_sort)
-            //===========================================================================================
-            for (unsigned int i = 0; i < Recojets.size(); i++)
-            {
-                sort(T_Reco_sort[i].begin(), T_Reco_sort[i].end());
-                sort(PT_Reco_sort[i].begin(), PT_Reco_sort[i].end());
-                sort(velocity_jet_sort[i].begin(), velocity_jet_sort[i].end());
-                //================================================================
-                // Finally output PT_sort_number_only == PT_Reco_sort size
-                //================================================================
-                if (T_Reco_sort[i].size() == 0)
-                    continue;
-                PT_sort_number_only[i].push_back(PT_Reco_sort[i][0]);
-                T_sort_number_only[i].push_back(T_Reco_sort[i][0]);
-                velocity_number_only[i].push_back(velocity_jet_sort[i][0]);
-                for (unsigned int uuu = 0; uuu < T_Reco_sort[i].size(); uuu++)
-                {
-                    if (PT_Reco_sort[i][uuu] != PT_sort_number_only[i].back())
-                    {
-                        PT_sort_number_only[i].push_back(PT_Reco_sort[i][uuu]); //只存不同的pt
-                    }
-                    if (T_Reco_sort[i][uuu] != T_sort_number_only[i].back())
-                    {
-                        T_sort_number_only[i].push_back(T_Reco_sort[i][uuu]);
-                    }
-                    if (velocity_jet_sort[i][uuu] != velocity_number_only[i].back())
-                    {
-                        velocity_number_only[i].push_back(velocity_jet_sort[i][uuu]);
-                    }
-                }
-            }
-            vector<int> Full_contain;
-            unsigned int check_point_eta = 0;
-            //=================================
-            // make sure that 90% eta are small than 1
-            //=================================
-            for (unsigned int i = 0; i < Recojets.size(); i++)
-            {
-                if (event_number_Reco[i] > 0)
-                {
-                    //cout << "Fraction_of_the_event_forth====> " << Eta_smaller_than_1_event[Back_forth]/event_number_Reco[Back_forth] << endl;
-                    if ((Eta_smaller_than_1_event[i] / event_number_Reco[i]) > 0.9) //???
-                    {
-                        Full_contain.push_back(1);
-                    }
-                    else
-                    {
-                        Full_contain.push_back(0);
-                        check_point_eta = check_point_eta + 1;
-                    }
-                }
-                else
-                {
-                    Full_contain.push_back(0);
-                    check_point_eta = check_point_eta + 1;
-                }
-            }
-            if (check_point_eta == Recojets.size())
-            {
-                continue;
-            }
-            vector<float> dR_Highest_PT_T_Reco;
-            vector<float> dR_Highest_PT_PT_Reco;
-            vector<float> dR_Highest_PT_V_Reco;
-            //================================================================
-            // Save FourP with Pt is highest to Highest_PT_FourP
-            //================================================================
-            vector<vector<TLorentzVector>> Highest_PT_FourP(Recojets.size(), vector<TLorentzVector>());
-            vector<vector<int>> PT_PDG_Reco(Recojets.size(), vector<int>());
-            vector<vector<int>> T_PDG_Reco(Recojets.size(), vector<int>());
-            vector<vector<int>> V_PDG_Reco(Recojets.size(), vector<int>());
-            for (unsigned int i = 0; i < Recojets.size(); i++)
-            {
-                if (Full_contain[i] == 1)
-                {
-                    if (T_Reco_sort[i].size() > 0)
-                    {
-                        unsigned int Size_T_PT = T_Reco_sort[i].size();
-                        //cout << "T_Reco_sort[i].size()" << T_Reco_sort[i].size() << endl;
-                        //cout << "PT_Reco_sort[i].size()" << PT_Reco_sort[i].size() << endl;
-                        //cout << "velocity_jet_sort" << velocity_jet_sort[i].size() << endl;
-                        for (unsigned int jkl = 0; jkl < Size_T_PT; jkl++)
-                        {
-                            if (PT_Reco_sort[i][Size_T_PT - 1] == PT_Reco[i][jkl])
-                            {
-                                Highest_PT_FourP[i].push_back(FourP_dR_Reco[i][jkl]);
-                            }
-                        }
-
-                        for (unsigned int jkl = 0; jkl < 5; jkl++)
-                        {
-                            if (T_sort_number_only[i].size() > 0 and PT_sort_number_only[i].size() > 0 and velocity_number_only[i].size() > 0)
-                            {
-                                if (jkl < T_sort_number_only[i].size())
-                                {
-                                    int identify_1 = 0;
-                                    for (unsigned int ijk = 0; ijk < Size_T_PT; ijk++)
-                                    {
-                                        if (T_sort_number_only[i][T_sort_number_only[i].size() - 1 - jkl] == T_Reco[i][ijk])
-                                        {
-                                            if (ijk == 0)
-                                            {
-                                                Timing_detector_Reco_TOF->Fill(T_Reco[i][ijk]);
-                                            }
-                                            identify_1++;
-                                            T_PDG_Reco[i].push_back(PDG_Reco[i][ijk]);
-                                            dR_Highest_PT_T_Reco.push_back(FourP_dR_Reco[i][ijk].DeltaR(Highest_PT_FourP[i][0]));
-                                            h_Particles_dR_Highest_PT_T_Reco[jkl]->Fill(FourP_dR_Reco[i][ijk].DeltaR(Highest_PT_FourP[i][0]));
-                                        }
-                                    }
-                                }
-                                if (jkl < PT_sort_number_only[i].size())
-                                {
-                                    int identify = 0;
-                                    for (unsigned int ijk = 0; ijk < Size_T_PT; ijk++)
-                                    {
-                                        if (PT_sort_number_only[i][jkl] == PT_Reco[i][ijk])
-                                        {
-                                            if (ijk == 0)
-                                            {
-                                                Timing_detector_Reco_PT->Fill(PT_Reco[i][ijk]);
-                                            }
-                                            //cout << "PT_Reco" << PT_Reco[i][0] << endl;
-                                            PT_PDG_Reco[i].push_back(PDG_Reco[i][ijk]);
-                                            dR_Highest_PT_PT_Reco.push_back(FourP_dR_Reco[i][ijk].DeltaR(Highest_PT_FourP[i][0]));
-                                            h_Particles_dR_Highest_PT_PT_Reco[jkl]->Fill(FourP_dR_Reco[i][ijk].DeltaR(Highest_PT_FourP[i][0]));
-                                        }
-                                    }
-                                }
-                                if (jkl < velocity_number_only[i].size())
-                                {
-                                    for (unsigned int ijk = 0; ijk < Size_T_PT; ijk++)
-                                    {
-                                        if (velocity_number_only[i][jkl] == velocity_jet[i][ijk])
-                                        {
-                                            if (ijk == 0)
-                                            {
-                                                Timing_detector_Reco_V->Fill(velocity_jet[i][ijk]);
-                                            }
-                                            V_PDG_Reco[i].push_back(PDG_Reco[i][ijk]);
-                                            dR_Highest_PT_V_Reco.push_back(FourP_dR_Reco[i][ijk].DeltaR(Highest_PT_FourP[i][0]));
-                                            h_Particles_dR_Highest_PT_V_Reco[jkl]->Fill(FourP_dR_Reco[i][ijk].DeltaR(Highest_PT_FourP[i][0]));
-                                            //cout << "PTPTPT:FourP_dR_Reco[Back_forth][ijk].DeltaR(Highest_PT_FourP[Back_forth][0]): " << FourP_dR_Reco[i][ijk].DeltaR(Highest_PT_FourP[i][0]) << endl;
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                        //cout << "dR_Highest_PT_PT_Reco" << dR_Highest_PT_PT_Reco.size() << endl;
-                    }
-                }
-            } //End of Save Tree Variables
-            //for (i = 0; i < 5; i++)
-            //{
-            //    dR_TrPT_HPt_Reco
-            //}
-            int nDr = dR_Highest_PT_PT_Reco.size();
-
-            for (int i = 0; i < TMath::Min(5, nDr); i++)
-            {
-                Arr_dR_Tr0T_HPt_Reco[i] = dR_Highest_PT_PT_Reco[i];
-            }
-            //if (nDr >= 5)
-            //{
-            //    Arr_dR_Tr0T_HPt_Reco[4] = dR_Highest_PT_PT_Reco[4];
-            //}
-            //else
-            //{
-            //    Arr_dR_Tr0T_HPt_Reco[nDr - 1] = dR_Highest_PT_PT_Reco[nDr - 1];
-            //}
-
-            if (dR_Highest_PT_PT_Reco.size() >= 1)
-            {
-                dR_Tr0PT_HPt_Reco = dR_Highest_PT_PT_Reco[0];
-            }
-            if (dR_Highest_PT_PT_Reco.size() >= 2)
-            {
-                dR_Tr1PT_HPt_Reco = dR_Highest_PT_PT_Reco[1];
-            }
-            if (dR_Highest_PT_PT_Reco.size() >= 3)
-            {
-                dR_Tr2PT_HPt_Reco = dR_Highest_PT_PT_Reco[2];
-            }
-            if (dR_Highest_PT_PT_Reco.size() >= 4)
-            {
-                dR_Tr3PT_HPt_Reco = dR_Highest_PT_PT_Reco[3];
-            }
-            if (dR_Highest_PT_PT_Reco.size() >= 5)
-            {
-                dR_Tr4PT_HPt_Reco = dR_Highest_PT_PT_Reco[4];
-            }
-            if (dR_Highest_PT_T_Reco.size() >= 1)
-            {
-                dR_Tr0T_HPt_Reco = dR_Highest_PT_T_Reco[0];
-            }
-            if (dR_Highest_PT_T_Reco.size() >= 2)
-            {
-                dR_Tr1T_HPt_Reco = dR_Highest_PT_T_Reco[1];
-            }
-            if (dR_Highest_PT_T_Reco.size() >= 3)
-            {
-                dR_Tr2T_HPt_Reco = dR_Highest_PT_T_Reco[2];
-            }
-            if (dR_Highest_PT_T_Reco.size() >= 4)
-            {
-                dR_Tr3T_HPt_Reco = dR_Highest_PT_T_Reco[3];
-            }
-            if (dR_Highest_PT_T_Reco.size() >= 5)
-            {
-                dR_Tr4T_HPt_Reco = dR_Highest_PT_T_Reco[4];
-            }
-            if (dR_Highest_PT_V_Reco.size() >= 1)
-            {
-                dR_Tr0_V_Reco = dR_Highest_PT_V_Reco[0];
-            }
-            if (dR_Highest_PT_V_Reco.size() >= 2)
-            {
-                dR_Tr1_V_Reco = dR_Highest_PT_V_Reco[1];
-            }
-            if (dR_Highest_PT_V_Reco.size() >= 3)
-            {
-                dR_Tr2_V_Reco = dR_Highest_PT_V_Reco[2];
-            }
-            if (dR_Highest_PT_V_Reco.size() >= 4)
-            {
-                dR_Tr3_V_Reco = dR_Highest_PT_V_Reco[3];
-            }
-            if (dR_Highest_PT_V_Reco.size() >= 5)
-            {
-                dR_Tr4_V_Reco = dR_Highest_PT_V_Reco[4];
-            }
             //================================================================
             //       Sort from small to big (T_Reco_sort and PT_Reco_sort)
             //================================================================
