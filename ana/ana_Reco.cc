@@ -278,6 +278,7 @@ int main(int argc, char **argv)
     TH1D *h_jet_eta_truth_check = new TH1D("h_jet_eta_truth_check", "#eta", 100, -5, 5); //before eta cut
     TH1D *h_jet_n_truth = new TH1D("h_jet_n_truth", "Nr of truth jets", 10, 0, 10);      //before match
     TH1D *h_jet_nn_truth = new TH1D("h_jet_nn_truth", "Nr of truth jets", 10, 0, 10);    //after match
+    TH1D *h_effR_j1 = new TH1D("h_effR_j1", "DeltaR", 100, 0., 10.0);
     TH1D *Wbosn_nn = new TH1D("Wbosn_nn", "Nr of Wboson", 10, 0, 10);
     TH1D *Wbosn_ss = new TH1D("Wbosn_ss", "Status of Wboson", 5, 0, 5);
     TH1D *h_jet_m_truth = new TH1D("jet_m_truth", "Mass [GeV]", 100, 0, 100);
@@ -287,14 +288,13 @@ int main(int argc, char **argv)
     //h_jet_pt_truth_check->GetYaxis()->SetTitle("Entries");
     TH1D *h_jet_eta_reco_check = new TH1D("h_jet_eta_reco_check", "#eta", 100, -5, 5); //before eta cut
     TH1D *h_jet_n_reco = new TH1D("h_jet_n_reco", "Nr of truth jets", 10, 0, 10);      //before match
-    TH1D *h_jet_nn_reco = new TH1D("h_jet_nn_reco", "Nr of truth jets", 10, 0, 10);    //after match
+    TH1D *h_jet_nn_reco = new TH1D("h_jet_nn_reco", "Nr of Reco jets", 10, 0, 10);     //after match
     TH1D *h_jet_m_reco = new TH1D("h_jet_m_reco", "Mass [GeV]", 100, 0, 100);
 
     TH1D *h_pt_ecal = new TH1D("ecal_pt", "pt ecal", 270, 0, 2700);
     TH1D *Timing_detecto_ECAL_TDif = new TH1D("Timing_detecto_ECAL_TDif", "Timing_detecto_ECAL_TDif", 200, 0, 50);
     Timing_detecto_ECAL_TDif->GetXaxis()->SetTitle("T[ns]");
 
-    TH1D *h_effR_j1 = new TH1D("h_effR_j1", "not match true jet", 100, 0., 10.0);
     TH1D *h_effR_j2 = new TH1D("h_effR_j2", "one match true jet", 100, 0., 10.0);
     TH1D *h_effR_j3 = new TH1D("h_effR_j3", "two match true jet", 100, 0., 10.0);
     TH1F *Timing_detector_Reco_TOF = new TH1F("Timing_detector_Reco_TOF", "Timing_detector_Reco_TOF", 200, 0, 50);
@@ -540,7 +540,6 @@ int main(int argc, char **argv)
                 for (int j = 0; j < nMCP; ++j)
                 {
                     EVENT::MCParticle *mcp = (EVENT::MCParticle *)col->getElementAt(j);
-
                     filess << mcp->getPDG() << "      \t" << mcp->getGeneratorStatus() << "\t\t\t";
                     for (unsigned int k = 0; k < (mcp->getDaughters().size()); k++)
                     {
@@ -626,11 +625,14 @@ int main(int argc, char **argv)
                 h_jet_pt_truth_check->Fill(pt);
                 h_jet_eta_truth_check->Fill(eta);
                 h_jet_m_truth->Fill(m);
+                //==============================================================
+                // Selection: Each Jet constituents & abs(eta)<1
+                //==============================================================
+                if (TMath::Abs(eta) > 1)
+                    continue;
                 //===============================================================
                 // Matching:  Require Truth jet and W_boson dr < 0.4
                 //===============================================================
-                //if (WW_boson.size() != 0) //for qq event
-                //{
                 for (unsigned int i = 0; i < WW_boson.size(); i++)
                 {
                     TLorentzVector temp_WW(0, 0, 0, 0);
@@ -652,19 +654,36 @@ int main(int argc, char **argv)
                         Truthjets_axis_index.push_back(k);
                     }
                 }
-                //}
-                //else
-                //{
-                //    TLorentzVector p_using;
-                //    p_using.SetPxPyPzE(sjets_truth[k].px(), sjets_truth[k].py(), sjets_truth[k].pz(), sjets_truth[k].e());
-                //    Truthjets_axis.push_back(p_using);
-                //}
-                //==============================================================
-                // Selection: Each Jet constituents & abs(eta)<1
-                //==============================================================
-                if (TMath::Abs(eta) > 1)
-                    continue;
+
             } //end of sjets_truth loop
+            if (Truthjets_axis.size() == 1)
+            {
+                cout << "sjets_truth.size =" << sjets_truth.size() << endl;
+                cout << "WW_boson.size =" << WW_boson.size() << endl;
+                for (unsigned int j = 0; j < Truthjets_axis.size(); j++)
+                {
+                    double dr1 = 10;
+                    for (unsigned int i = 0; i < WW_boson.size(); i++)
+                    {
+                        TLorentzVector temp_jet(0, 0, 0, 0);
+                        temp_jet.SetPxPyPzE(Truthjets_axis[j].Px(),
+                                            Truthjets_axis[j].Py(),
+                                            Truthjets_axis[j].Pz(),
+                                            Truthjets_axis[j].E());
+                        TLorentzVector temp_WW(0, 0, 0, 0);
+                        temp_WW.SetPxPyPzE(WW_boson[i].px(),
+                                           WW_boson[i].py(),
+                                           WW_boson[i].pz(),
+                                           WW_boson[i].e());
+                        double dr = temp_WW.DeltaR(temp_jet);
+                        if (dr1 > dr)
+                        {
+                            dr1 = dr;
+                        }
+                        h_effR_j1->Fill(dr1);
+                    }
+                }
+            }
             //cout << "End save truth" << endl;
             h_jet_n_truth->Fill(sjets_truth.size());
             h_jet_nn_truth->Fill(Truthjets_axis.size());
@@ -827,6 +846,8 @@ int main(int argc, char **argv)
                 double phi = sjets_reco[k].phi();
                 if (phi < 0)
                     phi = phi + k2PI;
+                if (TMath::Abs(eta) > 1)
+                    continue;
                 double m = sjets_reco[k].m();
                 double pt = sjets_reco[k].perp();
                 double e = sjets_reco[k].e();
@@ -849,6 +870,7 @@ int main(int argc, char **argv)
                             isRecoMatch = true;
                         }
                     }
+
                     if (isRecoMatch == false)
                     {
                         continue;
@@ -870,10 +892,10 @@ int main(int argc, char **argv)
             vector<vector<double>> velocity_jet(Recojets.size(), vector<double>());
             vector<vector<double>> velocity_jet_sort(Recojets.size(), vector<double>());
             vector<vector<double>> velocity_number_only(Recojets.size(), vector<double>());
-            vector<double> mass_Reco = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            vector<int> event_number_Reco = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            vector<int> Eta_smaller_than_1_event = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-            vector<int> Eta_smaller_than_1_event_for_mass = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+            vector<double> mass_Reco(Recojets.size());
+            vector<int> event_number_Reco(Recojets.size());
+            vector<int> Eta_smaller_than_1_event(Recojets.size());
+            vector<int> Eta_smaller_than_1_event_for_mass(Recojets.size());
             //cout << "Recojets.size()" << Recojets.size() << endl;
             for (unsigned int k = 0; k < Recojets.size(); k++)
             {
@@ -911,10 +933,10 @@ int main(int argc, char **argv)
                         int CellY_Cal = int(par1[1]);
                         int CellZ_Cal = int(par1[2]);
                         TLorentzVector temp_jet(0, 0, 0, 0);
-                        temp_jet.SetPxPyPzE(sjets_reco[k].px(),
-                                            sjets_reco[k].py(),
-                                            sjets_reco[k].pz(),
-                                            sjets_reco[k].e());
+                        temp_jet.SetPxPyPzE(Recojets[k].Px(),
+                                            Recojets[k].Py(),
+                                            Recojets[k].Pz(),
+                                            Recojets[k].E());
                         if (layer == 1 && (temp_jet.DeltaR(LE_1)) < 0.4 && x == CellX_Cal && y == CellY_Cal && z == CellZ_Cal)
                         {
                             ECALhits0.push_back(Thit);
@@ -968,6 +990,15 @@ int main(int argc, char **argv)
                 }
             } //End of Recojets loop
             //cout << "Recojets loop" << endl;
+            //if (Recojets.size() == 1)
+            //{
+            //    cout << "1 sjets_reco = " << sjets_reco.size() << endl;
+            //}
+            //if (Recojets.size() == 0)
+            //{
+            //    cout << "0 sjets_reco = " << sjets_reco.size() << endl;
+            //
+            //}
             h_jet_n_reco->Fill(sjets_reco.size());
             h_jet_nn_reco->Fill(Recojets.size());
             //cout << "0000" << sjets_reco.size() << endl;
