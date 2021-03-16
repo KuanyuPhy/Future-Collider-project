@@ -322,6 +322,15 @@ int main(int argc, char **argv)
         h_jet_time_layerECAL[j]->GetYaxis()->SetTitle("Energy");
         h_jet_time_layerECAL[j]->Sumw2();
     }
+    TH1F *h_Particles_Rank_T_Reco[5];
+    TH1F *h_Particles_Rank_PT_Reco[5];
+    TH1F *h_Particles_Rank_V_Reco[5];
+    for (int j = 0; j < 5; j++)
+    {
+        h_Particles_Rank_T_Reco[j] = new TH1F(Form("h_Particles_Rank_T_Reco_%i", j), Form("h_Particles_Rank_T_Reco_%i", j), 50, 0, 50);
+        h_Particles_Rank_PT_Reco[j] = new TH1F(Form("h_Particles_Rank_PT_Reco_%i", j), Form("h_Particles_Rank_PT_Reco_%i", j), 50, 0, 50);
+        h_Particles_Rank_V_Reco[j] = new TH1F(Form("h_Particles_Rank_V_Reco_%i", j), Form("h_Particles_Rank_V_Reco_%i", j), 50, 0, 50);
+    }
 
     Int_t Event_reco;
     Float_t dR_Tr0T_HPt_Reco;
@@ -573,7 +582,14 @@ int main(int argc, char **argv)
                     }
                     else
                     {
-                        avec_truth.push_back(p);
+                        if (p.pt() != 0)
+                        {
+                            avec_truth.push_back(p);
+                        }
+                        else
+                        {
+                            continue;
+                        }
                     }
                     //Pt < 1.5 GeV can not reach ECAL
                 }
@@ -1109,6 +1125,10 @@ int main(int argc, char **argv)
             //   Sort from small to big (T_Reco_sort and PT_Reco_sort and velocity_jet_sort)
             //===========================================================================================
             //cout << "Start sort" << endl;
+            vector<int> Trailing_particle_kind_T = {11, 12, 13, 14, 22, 130, 211, 310, 321, 2112, 2212, 3112, 3122, 3312, 3222, 3322, 16, 3334, 1000010020};
+            vector<int> Trailing_particle_kind_PT = {11, 12, 13, 14, 22, 130, 211, 310, 321, 2112, 2212, 3112, 3122, 3312, 3222, 3322, 16, 3334, 1000010020};
+            vector<int> Trailing_particle_kind_V = {11, 12, 13, 14, 22, 130, 211, 310, 321, 2112, 2212, 3112, 3122, 3312, 3222, 3322, 16, 3334, 1000010020};
+
             for (unsigned int i = 0; i < Recojets.size(); i++)
             {
                 if (T_Reco_sort[i].size() > 0)
@@ -1191,6 +1211,7 @@ int main(int argc, char **argv)
             vector<vector<int>> PT_PDG_Reco(Recojets.size(), vector<int>());
             vector<vector<int>> T_PDG_Reco(Recojets.size(), vector<int>());
             vector<vector<int>> V_PDG_Reco(Recojets.size(), vector<int>());
+
             for (unsigned int i = 0; i < Recojets.size(); i++)
             {
                 if (Full_contain[i] == 1)
@@ -1249,6 +1270,116 @@ int main(int argc, char **argv)
                     }
                 }
             } //End of Save Tree Vars
+            //Start Save PDG
+            for (unsigned int i = 0; i < Recojets.size(); i++)
+            {
+
+                for (unsigned int j = 0; j < 5; j++)
+                {
+                    if (T_PDG_Reco[i].size() > 0)
+                    {
+                        if ((T_PDG_Reco[i].size()) > j)
+                        {
+                            int it;
+                            it = find(Trailing_particle_kind_T.begin(), Trailing_particle_kind_T.end(), abs(T_PDG_Reco[i][j]))[0];
+                            if (it != abs(T_PDG_Reco[i][j]))
+                            {
+                                Trailing_particle_kind_T.push_back(abs(T_PDG_Reco[i][j]));
+                                for (unsigned int m = 0; m < Trailing_particle_kind_T.size(); m++)
+                                {
+                                    //cout << "Trailing_particle_kind_T[m]: "<< abs(Trailing_particle_kind_T[m]) << endl;
+                                    if (abs(T_PDG_Reco[i][j]) == Trailing_particle_kind_T[m] and abs(T_PDG_Reco[i][j]) != 22)
+                                    {
+                                        h_Particles_Rank_T_Reco[j]->Fill(m);
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                for (unsigned int m = 0; m < Trailing_particle_kind_T.size(); m++)
+                                {
+                                    //cout << "Trailing_particle_kind_T[m]: "<< abs(Trailing_particle_kind_T[m]) << endl;
+                                    if (abs(T_PDG_Reco[i][j]) == Trailing_particle_kind_T[m] and abs(T_PDG_Reco[i][j]) != 22)
+                                    {
+                                        h_Particles_Rank_T_Reco[j]->Fill(m);
+                                    }
+                                    //cout << "Particle_ID_T_Reco[j]->GetBinContent(m): " << h_Particles_Rank_T_Reco[j]->GetBinContent(m+1) << endl;
+                                }
+                            }
+                        }
+                    }
+                    if (PT_PDG_Reco[i].size() > 0)
+                    {
+                        if ((PT_PDG_Reco[i].size()) > j)
+                        {
+                            int it2;
+                            it2 = find(Trailing_particle_kind_PT.begin(), Trailing_particle_kind_PT.end(), abs(PT_PDG_Reco[i][j]))[0];
+                            if (it2 != abs(PT_PDG_Reco[i][j]))
+                            {
+                                //	cout << "============================================================================================================================================================" << endl;
+                                //      cout << "abs(PT_PDG_Reco[Back_forth][j]): " << abs(PT_PDG_Reco[Back_forth][j]) << endl;
+                                Trailing_particle_kind_PT.push_back(abs(PT_PDG_Reco[i][j]));
+                                for (unsigned int m = 0; m < Trailing_particle_kind_PT.size(); m++)
+                                {
+                                    //cout << "Trailing_particle_kind_PT[m]: "<< abs(Trailing_particle_kind_PT[m]) << endl;
+                                    if (abs(PT_PDG_Reco[i][j]) == Trailing_particle_kind_PT[m] and abs(PT_PDG_Reco[i][j]) != 22)
+                                    {
+                                        h_Particles_Rank_PT_Reco[j]->Fill(m);
+                                    }
+                                    //cout << "Particle_ID_PT_Reco[j]->GetBinContent(m): " << h_Particles_Rank_PT_Reco[j]->GetBinContent(m+1) << endl;
+                                }
+                            }
+                            else
+                            {
+                                for (unsigned int m = 0; m < Trailing_particle_kind_PT.size(); m++)
+                                {
+                                    //cout << "Trailing_particle_kind_PT[m]: "<< abs(Trailing_particle_kind_PT[m]) << endl;
+                                    if (abs(PT_PDG_Reco[i][j]) == Trailing_particle_kind_PT[m] and abs(PT_PDG_Reco[i][j]) != 22)
+                                    {
+                                        h_Particles_Rank_PT_Reco[j]->Fill(m);
+                                    }
+                                    //cout << "Particle_ID_PT_Reco[j]->GetBinContent(m): " << h_Particles_Rank_PT_Reco[j]->GetBinContent(m+1) << endl;
+                                }
+                            }
+                        }
+                    }
+                    if (V_PDG_Reco[i].size() > 0)
+                    {
+                        if ((V_PDG_Reco[i].size()) > j)
+                        {
+                            int it2;
+                            it2 = find(Trailing_particle_kind_V.begin(), Trailing_particle_kind_V.end(), abs(V_PDG_Reco[i][j]))[0];
+                            if (it2 != abs(V_PDG_Reco[i][j]))
+                            {
+                                //	cout << "============================================================================================================================================================" << endl;
+                                //      cout << "abs(PT_PDG_Reco[Back_forth][j]): " << abs(PT_PDG_Reco[Back_forth][j]) << endl;
+                                Trailing_particle_kind_V.push_back(abs(V_PDG_Reco[i][j]));
+                                for (unsigned int m = 0; m < Trailing_particle_kind_V.size(); m++)
+                                {
+                                    //cout << "Trailing_particle_kind_PT[m]: "<< abs(Trailing_particle_kind_PT[m]) << endl;
+                                    if (abs(V_PDG_Reco[i][j]) == Trailing_particle_kind_V[m] and abs(V_PDG_Reco[i][j]) != 22)
+                                    {
+                                        h_Particles_Rank_V_Reco[j]->Fill(m);
+                                    }
+                                    //cout << "Particle_ID_PT_Reco[j]->GetBinContent(m): " << h_Particles_Rank_PT_Reco[j]->GetBinContent(m+1) << endl;
+                                }
+                            }
+                            else
+                            {
+                                for (unsigned int m = 0; m < Trailing_particle_kind_V.size(); m++)
+                                {
+                                    //cout << "Trailing_particle_kind_PT[m]: "<< abs(Trailing_particle_kind_PT[m]) << endl;
+                                    if (abs(V_PDG_Reco[i][j]) == Trailing_particle_kind_V[m] and abs(V_PDG_Reco[i][j]) != 22)
+                                    {
+                                        h_Particles_Rank_V_Reco[j]->Fill(m);
+                                    }
+                                    //cout << "Particle_ID_PT_Reco[j]->GetBinContent(m): " << h_Particles_Rank_PT_Reco[j]->GetBinContent(m+1) << endl;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             //cout << "End of Save Tree Vars" << endl;
             if (dR_Highest_PT_PT_Reco.size() >= 1)
             {
@@ -1309,6 +1440,21 @@ int main(int argc, char **argv)
             if (dR_Highest_PT_V_Reco.size() >= 5)
             {
                 dR_Tr4_V_Reco = dR_Highest_PT_V_Reco[4];
+            }
+            for (int j = 0; j < 5; j++)
+            {
+                for (unsigned int i = 0; i < Trailing_particle_kind_PT.size(); i++)
+                {
+                    h_Particles_Rank_PT_Reco[j]->GetXaxis()->SetBinLabel(i + 1, Form("ID=%i", Trailing_particle_kind_PT[i]));
+                }
+                for (unsigned int i = 0; i < Trailing_particle_kind_T.size(); i++)
+                {
+                    h_Particles_Rank_T_Reco[j]->GetXaxis()->SetBinLabel(i + 1, Form("ID=%i", Trailing_particle_kind_T[i]));
+                }
+                for (unsigned int i = 0; i < Trailing_particle_kind_V.size(); i++)
+                {
+                    h_Particles_Rank_V_Reco[j]->GetXaxis()->SetBinLabel(i + 1, Form("ID=%i", Trailing_particle_kind_V[i]));
+                }
             }
             //cout << "clear" << endl;
             //===============================
